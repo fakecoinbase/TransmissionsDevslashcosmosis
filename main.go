@@ -78,7 +78,7 @@ func validateSignature(c *gin.Context) {
 	sender := c.Query("sender")
 	recipient := c.Query("recipient")
 	amountStr := c.Query("amount")
-	amount, _ := strconv.ParseFloat(amountStr, 64)
+	amount, _ := strconv.Atoi(amountStr)
 	timestampStr := c.Query("timestamp")
 	timestamp, _ := strconv.Atoi(timestampStr)
 	signature := c.Query("signature")

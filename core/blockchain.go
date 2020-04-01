@@ -9,7 +9,7 @@ import (
 type UserPublicKey string
 
 // The amount of unspent coin each user has associated with their public key
-type UTXO map[UserPublicKey]float64
+type UTXO map[UserPublicKey]int
 
 // A Blockchain is a struct that stores a Chain of Blocks, as well as MemPool and manages its own UTXO map.
 // It also stores a ValidationServerURL and an Operator Public key which is used to identify that node when mining
@@ -146,7 +146,7 @@ type BlockHeader struct {
 type Transaction struct {
 	Sender    UserPublicKey // The public key of the sender
 	Recipient UserPublicKey // The public key of the recipient
-	Amount    float64       // The amount of coin transferred
+	Amount    int           // The amount of coin transferred
 	Timestamp int64         // The time at which this transaction was made. This value does not need to be accurate, it is only for the purpose of ordering transactions in a BlockHeader.
 	Signature string        // A hex string that is an ECDSA signed representation of this transaction ({SENDER} -{AMOUNT}-> {RECIPIENT})
 }
