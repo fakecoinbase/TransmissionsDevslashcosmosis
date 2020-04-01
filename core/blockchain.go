@@ -20,6 +20,8 @@ type Blockchain struct {
 
 	ValidationServerURL string        // A link to a server that can be used to validate signatures
 	OperatorPublicKey   UserPublicKey // A public key that is used to identify the node when mining (so this node can receive mining rewards
+
+	IsMining bool // Stores whether the node is mining or not. If the node is mining and this bool is set to false, the node will terminate its mining proccess.
 }
 
 // Adds a transaction to the MemPool (but will do nothing to incorporate it into a block or verify it).
@@ -28,9 +30,12 @@ func (b *Blockchain) AddTransactionToMemPool(transaction Transaction) {
 }
 
 // Adds a new block to the chain (by first verifying it and getting its UTXO). It has side effects:
+//  - It stops all mining processes on this node
 //	- It removes the transactions inside the block from the MemPool
 //  - It updates the UTXO
 func (b *Blockchain) AddMinedBlockToChain(block Block) bool {
+	// Cancel mining processes as a new block has been found
+	b.IsMining = false
 
 	tempChain := append(b.Chain, block)
 
@@ -52,9 +57,13 @@ func (b *Blockchain) AddMinedBlockToChain(block Block) bool {
 	}
 }
 
-// Finds a valid proof for a block and validates transactions from the MemPool.
-// It returns a new, valid block. It does not add this block to the chain itself.
-func (b Blockchain) MineBlock() Block {
+// Finds a valid proof for a block and validates transactions from the MemPool. It removes invalid transactions.
+// It returns a pointer to a new block that will be nil if the mining process was canceled.
+// It does not add this block to the chain itself.
+func (b Blockchain) MineBlock(shouldMine *bool) *Block {
+	// Ensure that we are mining
+	*shouldMine = true
+
 	// Add a "coinbase" transaction that mints 10 coins to the miner (this node's public key)
 	newTransactions := append(b.MemPool, Transaction{"0", b.OperatorPublicKey, 0, 10, ""})
 
@@ -82,10 +91,15 @@ func (b Blockchain) MineBlock() Block {
 
 	// Keep incrementing the nonce until we have a valid proof
 	for !ValidateProof(Block{blockHeader, proof}) {
+		// Cancel mining if we are having this mine terminated
+		if *shouldMine == false {
+			return nil
+		}
 		proof.Nonce += 1
 	}
 
-	return Block{blockHeader, proof}
+	// We found a valid block!
+	return &Block{blockHeader, proof}
 }
 
 // Does these checks to ensure the chain is valid:
@@ -95,7 +109,7 @@ func (b Blockchain) MineBlock() Block {
 //  - Check that there are not more than one coinbase transaction in each block
 //  - Check that signatures are valid
 //  - Check that difficulty threshold is valid
-// It returns whether the chain is valid and an updated UTXO.
+// It returns whether the chain is valid and an updated UTXO (or nil if not valid).
 func ValidateChain(blocks []Block, validationServerURL string) (bool, UTXO) {
 	utxo := make(UTXO)
 

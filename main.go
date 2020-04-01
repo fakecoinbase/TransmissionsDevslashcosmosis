@@ -53,18 +53,20 @@ func main() {
 		}
 
 		// Start mining if we have enough transactions
-		if len(chain.MemPool) > 0 {
-			go func() {
+		if len(chain.MemPool) > 0 && chain.IsMining == false {
+			block := chain.MineBlock(&chain.IsMining)
 
-				block := chain.MineBlock()
-
+			// If we finished mining and won the race!
+			if block != nil {
 				// If mined block was valid and added to chain
-				if chain.AddMinedBlockToChain(block) == true {
+				if chain.AddMinedBlockToChain(*block) == true {
 					fmt.Println("We just mined a new block and added it to the chain!")
 				} else {
 					fmt.Println("The block we just mined was not valid! It was not added to the chain and the UTXO was not updated!")
 				}
-			}()
+			} else {
+				fmt.Println("We didn't mine a block in time, another node got the next block before us.")
+			}
 		}
 	})
 
