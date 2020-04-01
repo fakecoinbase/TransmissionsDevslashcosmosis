@@ -42,7 +42,7 @@ func main() {
 
 	chain = core.Blockchain{Chain: make([]core.Block, 0), MemPool: make([]core.Transaction, 0), UTXO: make(core.UTXO), ValidationServerURL: validationServerURL, OperatorPublicKey: core.UserPublicKey(operatorPublicKey)}
 
-	scheduler.Every(1).Minutes().Run(func() {
+	scheduler.Every(1).Minutes().NotImmediately().Run(func() {
 		// Clear out stale transactions
 		for index, transaction := range chain.MemPool {
 			// If the transaction is older than 24 hours

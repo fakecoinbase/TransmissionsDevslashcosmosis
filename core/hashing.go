@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// Convince function that hashes a block.
+// Convenience function that hashes a block.
 func (b Block) hash() string {
 	return SHA256(b)
 }
