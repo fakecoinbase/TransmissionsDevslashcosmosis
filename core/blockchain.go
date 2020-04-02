@@ -58,6 +58,43 @@ func (b *Blockchain) AddMinedBlockToChain(block Block) bool {
 	}
 }
 
+// Takes a slice of chains and finds the longest, valid chain and sets our chain to that chain.
+// It will terminate if no chains are valid or once it finds a chain smaller than our current chain. It has side effects:
+//  - It removes the transactions inside the chain's blocks from the MemPool
+//  - It updates the UTXO
+func (b *Blockchain) Consensus(chains [][]Block) bool {
+	// Sort the changes by longest first
+	sort.Slice(chains, func(index1, index2 int) bool {
+		return len(chains[index1]) < len(chains[index2])
+	})
+
+	for _, chain := range chains {
+		// If the chain is smaller than our current chain, our chain was the longest, so stop.
+		if len(chain) < len(b.Chain) {
+			fmt.Println("Our chain is longest, so our consensus function terminated.")
+			return false
+		}
+
+		if valid, utxo := ValidateChain(chain, b.ValidationServerURL); valid == true {
+			b.Chain = chain
+			b.UTXO = utxo
+
+			// Clear the MemPool of any confirmed transactions
+			for _, block := range chain {
+				b.MemPool = RemoveConfirmedTransactions(b.MemPool, block.Transactions)
+			}
+
+			// We found a longer, valid chain.
+			fmt.Println("We found a valid chain through our consensus function!")
+			return true
+		}
+	}
+
+	// No chain was valid or chosen.
+	fmt.Println("We ran our consensus function but all chains were invalid.")
+	return false
+}
+
 // Finds a valid proof for a block and validates transactions from the MemPool. It removes invalid transactions.
 // It returns a pointer to a new block that will be nil if the mining process was canceled.
 // It does not add this block to the chain itself.
@@ -142,43 +179,6 @@ func ValidateChain(blocks []Block, validationServerURL string) (bool, UTXO) {
 	}
 
 	return true, utxo
-}
-
-// Takes a slice of chains and finds the longest, valid chain and sets our chain to that chain.
-// It will terminate if no chains are valid or once it finds a chain smaller than our current chain. It has side effects:
-//  - It removes the transactions inside the chain's blocks from the MemPool
-//  - It updates the UTXO
-func (b *Blockchain) Consensus(chains [][]Block) bool {
-	// Sort the changes by longest first
-	sort.Slice(chains, func(index1, index2 int) bool {
-		return len(chains[index1]) < len(chains[index2])
-	})
-
-	for _, chain := range chains {
-		// If the chain is smaller than our current chain, our chain was the longest, so stop.
-		if len(chain) < len(b.Chain) {
-			fmt.Println("Our chain is longest, so our consensus function terminated.")
-			return false
-		}
-
-		if valid, utxo := ValidateChain(chain, b.ValidationServerURL); valid == true {
-			b.Chain = chain
-			b.UTXO = utxo
-
-			// Clear the MemPool of any confirmed transactions
-			for _, block := range chain {
-				b.MemPool = RemoveConfirmedTransactions(b.MemPool, block.Transactions)
-			}
-
-			// We found a longer, valid chain.
-			fmt.Println("We found a valid chain through our consensus function!")
-			return true
-		}
-	}
-
-	// No chain was valid or chosen.
-	fmt.Println("We ran our consensus function but all chains were invalid.")
-	return false
 }
 
 // A Block is a block header with a proof that when put into the format {Proof}-{BlockHeader}, can be hashed into a hex string with x leading 0s.
