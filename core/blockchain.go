@@ -2,9 +2,12 @@ package core
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"time"
 )
+
+var GenesisBlock = Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "b61e63485c4782d6495aa0091c6785d8b6c0a945a23d9b158093bbf3d93d6bb9024e6cab467cc11b51e1b1a158637a778473418298b09a7dd39c148863b1833c", Amount: 1000000000000, Timestamp: 1585852961, Signature: ""}}, PreviousHash: ""}, Proof: Proof{Nonce: 0, DifficultyThreshold: 0}}
 
 // A valid hexadecimal string that represents a user's public key. It must be on the ECDSA SECP256k1 curve.
 type UserPublicKey string
@@ -150,6 +153,11 @@ func (b Blockchain) MineBlock(shouldMine *bool) *Block {
 // It returns whether the chain is valid and an updated UTXO (or nil if not valid).
 func ValidateChain(blocks []Block, validationServerURL string) (bool, UTXO) {
 	utxo := make(UTXO)
+
+	// Check genesis block is correct
+	if reflect.DeepEqual(blocks[0], GenesisBlock) {
+		return false, nil
+	}
 
 	// Starting at the 2nd block, iterate over all blocks (so we don't verify the genesis block, only that it hasn't changed)
 	for index := 1; index < len(blocks); index++ {
