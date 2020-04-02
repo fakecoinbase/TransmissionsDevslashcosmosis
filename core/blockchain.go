@@ -21,7 +21,7 @@ type Blockchain struct {
 	ValidationServerURL string        // A link to a server that can be used to validate signatures
 	OperatorPublicKey   UserPublicKey // A public key that is used to identify the node when mining (so this node can receive mining rewards
 
-	IsMining bool // Stores whether the node is mining or not. If the node is mining and this bool is set to false, the node will terminate its mining proccess.
+	IsMining bool // Stores whether the node is mining or not. If the node is mining and this bool is set to false, the node will terminate its mining process.
 }
 
 // Adds a transaction to the MemPool (but will do nothing to incorporate it into a block or verify it).
