@@ -1,4 +1,4 @@
-# Cosmosis 🌌: A Blockchain written in Go
+# Cosmosis 🌌: A cryptocurrency written in Go
 
 <img
   src="https://i.imgur.com/rgED1En.png"
