@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+var coinbaseReward = 1000
+
 // Adds a transaction to the MemPool (but will do nothing to incorporate it into a block or verify it).
 func (l *LocalNode) AddTransactionToMemPool(transaction Transaction) {
 	// Run this in a separate Goroutine as IsTransactionAlreadyInMemPoolOrChain could take a while.
@@ -28,16 +30,18 @@ func (l *LocalNode) AddMinedBlockToChain(block Block) bool {
 	// Cancel mining processes as a new block has been found
 	l.IsMining = false
 
+	// Create a copy of the chain with the new block
 	tempChain := append(l.Chain, block)
 
-	isValid, utxo := ValidateChain(tempChain, l.ValidationServerURL)
+	// Check if that block is valid
+	isValid, newUTXO := ValidateBlock(len(tempChain)-1, tempChain, l.UTXO, l.ValidationServerURL)
 
 	if isValid {
 		// Clear Mempool of confirmed transactions (transactions that are now in this block)
 		l.MemPool = RemoveConfirmedTransactions(l.MemPool, block.Transactions)
 
 		// Update UTXO
-		l.UTXO = utxo
+		l.UTXO = newUTXO
 
 		// Update chain
 		l.Chain = tempChain
@@ -92,8 +96,8 @@ func (l LocalNode) MineBlock(shouldMine *bool) *Block {
 	// Ensure that we are mining
 	*shouldMine = true
 
-	// Add a "coinbase" transaction that mints 10 coins to the miner (this node's public key)
-	newTransactions := append(l.MemPool, Transaction{"0", l.OperatorPublicKey, 0, 10, ""})
+	// Add a "coinbase" transaction that mints the correct amount of coins to the miner (this node's public key)
+	newTransactions := append(l.MemPool, Transaction{"0", l.OperatorPublicKey, coinbaseReward, 0, ""})
 
 	// Sort the transactions by their timestamp
 	sort.Slice(newTransactions, func(index1, index2 int) bool {
@@ -102,14 +106,20 @@ func (l LocalNode) MineBlock(shouldMine *bool) *Block {
 
 	// Remove invalid transactions
 	for index, transaction := range newTransactions {
-		// If the transaction is a coinbase transaction (the first transaction) or the sender has enough coin then update their UTXO
-		if (transaction.Sender == "0" && index == 0) || (transaction.Amount < l.UTXO[transaction.Sender] && ValidateSignature(transaction, l.ValidationServerURL)) {
+		// If the transaction is a coinbase transaction (the first transaction):
+		if index == 0 {
+			// Skip validation.
+			continue
+		}
+
+		// If the sender has enough coins, and the signature is valid
+		if transaction.Amount < l.UTXO[transaction.Sender] && ValidateSignature(transaction, l.ValidationServerURL) {
+			// Update the balances of both parties
 			l.UTXO[transaction.Sender] -= transaction.Amount
 			l.UTXO[transaction.Recipient] += transaction.Amount
 		} else {
 			newTransactions = RemoveFromTransactions(newTransactions, index)
 		}
-
 	}
 
 	blockHeader := BlockHeader{time.Now().Unix(), newTransactions, LastBlock(l.Chain).hash()}
@@ -130,6 +140,28 @@ func (l LocalNode) MineBlock(shouldMine *bool) *Block {
 	return &Block{blockHeader, proof}
 }
 
+// Runs the ValidateBlock function on each block in the chain (except the genesis block), and checks that the genesis block has not changed.
+// It returns whether the chain is valid and an updated UTXO (or nil if not valid).
+func ValidateChain(blocks []Block, validationServerURL string) (bool, UTXO) {
+	utxo := make(UTXO)
+
+	// Iterate over all blocks and check if they are valid (and update UTXO)
+	for index, _ := range blocks {
+
+		valid, newUTXO := ValidateBlock(index, blocks, utxo, validationServerURL)
+
+		if !valid {
+			return false, nil
+		} else {
+			utxo = newUTXO
+		}
+	}
+
+	return true, utxo
+}
+
+// ValidateBlock takes the index of a block, the full Blockchain, a UTXO of the Blockchain up to that point, and a validationServerURL.
+// It returns whether that block is valid and an updated UTXO including that block's transactions.
 // Does these checks to ensure the chain is valid:
 //  - Check that previous hashes are valid
 //  - Check that users have enough UTXO to afford transactions
@@ -137,40 +169,62 @@ func (l LocalNode) MineBlock(shouldMine *bool) *Block {
 //  - Check that there are not more than one coinbase transaction in each block
 //  - Check that signatures are valid
 //  - Check that difficulty threshold is valid
-// It returns whether the chain is valid and an updated UTXO (or nil if not valid).
-func ValidateChain(blocks []Block, validationServerURL string) (bool, UTXO) {
-	utxo := make(UTXO)
+func ValidateBlock(index int, blocks []Block, utxo UTXO, validationServerURL string) (bool, UTXO) {
+	block := blocks[index]
 
-	// Check genesis block is correct
-	if reflect.DeepEqual(blocks[0], GenesisBlock) {
+	// If the block is the genesis block:
+	if index == 0 {
+		// Check this is the correct genesis block
+		if reflect.DeepEqual(block, GenesisBlock) {
+			genesisTransaction := block.Transactions[0]
+
+			utxo[genesisTransaction.Recipient] += genesisTransaction.Amount
+
+			return true, utxo
+		} else {
+
+			// The genesis block has been tampered with! This is an invalid block!
+			return false, nil
+		}
+	}
+
+	lastBlock := blocks[index-1]
+
+	// Check previous hash is valid and that proof is valid
+	if block.PreviousHash != lastBlock.hash() || !ValidateProof(block) {
 		return false, nil
 	}
 
-	// Starting at the 2nd block, iterate over all blocks (so we don't verify the genesis block, only that it hasn't changed)
-	for index := 1; index < len(blocks); index++ {
-		block := blocks[index]
-		lastBlock := blocks[index-1]
+	// Check that difficulty threshold is valid
+	if block.Proof.DifficultyThreshold != DetermineDifficultyForChainIndex(blocks, index) {
+		return false, nil
+	}
 
-		// Check previous hash is valid and that proof is valid
-		if block.PreviousHash != lastBlock.hash() || !ValidateProof(block) {
-			return false, nil
-		}
-
-		// Check that difficulty threshold is valid
-		if block.Proof.DifficultyThreshold != DetermineDifficultyForChainIndex(blocks, index) {
-			return false, nil
-		}
-
-		// Check the transactions in it are valid
-		for index, transaction := range block.Transactions {
-			// If the transaction is a coinbase transaction (the first transaction) or the sender has enough coin: update their UTXO
-			if (transaction.Sender == "0" && index == 0) || (transaction.Amount < utxo[transaction.Sender] && ValidateSignature(transaction, validationServerURL)) {
-				utxo[transaction.Sender] -= transaction.Amount
+	// Check the transactions in it are valid
+	for index, transaction := range block.Transactions {
+		// If the transaction is a coinbase transaction (the first transaction):
+		if index == 0 {
+			// If this is a VALID coinbase transaction
+			if transaction.Sender == "0" && transaction.Amount == coinbaseReward {
+				// Add coins to the recipient without taking from the sender (as this is a coinbase transaction)
 				utxo[transaction.Recipient] += transaction.Amount
 			} else {
 				return false, nil
 			}
+
+			// Skip other validation
+			continue
 		}
+
+		// If the sender has enough coins, and the signature is valid
+		if transaction.Amount < utxo[transaction.Sender] && ValidateSignature(transaction, validationServerURL) {
+			// Update the balances of both parties
+			utxo[transaction.Sender] -= transaction.Amount
+			utxo[transaction.Recipient] += transaction.Amount
+		} else {
+			return false, nil
+		}
+
 	}
 
 	return true, utxo
