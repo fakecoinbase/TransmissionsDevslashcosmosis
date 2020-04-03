@@ -18,6 +18,8 @@ func main() {
 
 	flag.StringVar(&validationServerURL, "validationServer", "http://0.0.0.0:1337/verifySignature", "A full url (with http://) that operates as a valid ECDSA SECP256k1 signature validation webserver. We recommend you run one locally. Go to: https://github.com/transmissionsdev/cosmosisUtils to find instructions to run one!")
 
+	seedNodeIPs := flag.Args()
+
 	flag.Parse()
 
 	// ------[Validate Flags]----------
@@ -72,6 +74,5 @@ func main() {
 		}
 	})
 
-	//TODO: Get seed nodes
-	self.Start([]string{})
+	go self.Start(seedNodeIPs)
 }
