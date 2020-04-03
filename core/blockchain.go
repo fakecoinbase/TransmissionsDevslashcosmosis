@@ -9,7 +9,15 @@ import (
 
 // Adds a transaction to the MemPool (but will do nothing to incorporate it into a block or verify it).
 func (l *LocalNode) AddTransactionToMemPool(transaction Transaction) {
-	l.MemPool = append(l.MemPool, transaction)
+	// Run this in a separate Goroutine as IsTransactionAlreadyInMemPoolOrChain could take a while.
+	go func() {
+		// If transaction is not already in MemPool/Chain:
+		if !IsTransactionAlreadyInMemPoolOrChain(transaction, l.MemPool, l.Chain) {
+			// Add transaction to MemPool.
+			l.MemPool = append(l.MemPool, transaction)
+		}
+	}()
+
 }
 
 // Adds a new block to the chain (by first verifying it and getting its UTXO). It has side effects:
