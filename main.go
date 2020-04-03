@@ -4,11 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/carlescere/scheduler"
-	"github.com/gin-gonic/gin"
 	"github.com/transmissionsdev/cosmosis/core"
+	"github.com/transmissionsdev/cosmosis/p2p"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -70,22 +69,8 @@ func main() {
 		}
 	})
 
-	router := gin.Default()
-	router.GET("/validateSignature", validateSignature)
+	p2p := p2p.NoiseWrapper{LocalChain: &chain.Chain}
+	chain.P2P = p2p
 
-	router.Run(":8080")
-}
-
-func validateSignature(c *gin.Context) {
-	sender := c.Query("sender")
-	recipient := c.Query("recipient")
-	amountStr := c.Query("amount")
-	amount, _ := strconv.Atoi(amountStr)
-	timestampStr := c.Query("timestamp")
-	timestamp, _ := strconv.Atoi(timestampStr)
-	signature := c.Query("signature")
-
-	c.JSON(200, gin.H{
-		"valid": core.ValidateSignature(core.Transaction{Sender: core.UserPublicKey(sender), Recipient: core.UserPublicKey(recipient), Timestamp: int64(timestamp), Amount: amount, Signature: signature}, validationServerURL),
-	})
+	p2p.Start([]string{})
 }
