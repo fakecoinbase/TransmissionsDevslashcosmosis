@@ -7,54 +7,32 @@ import (
 	"time"
 )
 
-var GenesisBlock = Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "b61e63485c4782d6495aa0091c6785d8b6c0a945a23d9b158093bbf3d93d6bb9024e6cab467cc11b51e1b1a158637a778473418298b09a7dd39c148863b1833c", Amount: 1000000000000, Timestamp: 1585852961, Signature: ""}}, PreviousHash: ""}, Proof: Proof{Nonce: 0, DifficultyThreshold: 0}}
-
-// A valid hexadecimal string that represents a user's public key. It must be on the ECDSA SECP256k1 curve.
-type UserPublicKey string
-
-// The amount of unspent coin each user has associated with their public key
-type UTXO map[UserPublicKey]int
-
-// A Blockchain is a struct that stores a Chain of Blocks, as well as MemPool and manages its own UTXO map.
-// It also stores a ValidationServerURL and an Operator Public key which is used to identify that node when mining
-type Blockchain struct {
-	Chain   []Block       // The actual chain of transactions that makes up this "Blockchain"
-	MemPool []Transaction // The waiting room of transactions that are yet to be incorporated in a block. These get cleared out every 24 hours.
-	UTXO    UTXO          // The amount of unspent transactions each user has associated with their public key
-
-	ValidationServerURL string        // A link to a server that can be used to validate signatures
-	OperatorPublicKey   UserPublicKey // A public key that is used to identify the node when mining (so this node can receive mining rewards
-	P2P                 NoiseWrapper  // A struct with useful methods to communicate with our peers
-
-	IsMining bool // Stores whether the node is mining or not. If the node is mining and this bool is set to false, the node will terminate its mining process.
-}
-
 // Adds a transaction to the MemPool (but will do nothing to incorporate it into a block or verify it).
-func (b *Blockchain) AddTransactionToMemPool(transaction Transaction) {
-	b.MemPool = append(b.MemPool, transaction)
+func (l *LocalNode) AddTransactionToMemPool(transaction Transaction) {
+	l.MemPool = append(l.MemPool, transaction)
 }
 
 // Adds a new block to the chain (by first verifying it and getting its UTXO). It has side effects:
 //  - It stops all mining processes on this node
 //	- It removes the transactions inside the block from the MemPool
 //  - It updates the UTXO
-func (b *Blockchain) AddMinedBlockToChain(block Block) bool {
+func (l *LocalNode) AddMinedBlockToChain(block Block) bool {
 	// Cancel mining processes as a new block has been found
-	b.IsMining = false
+	l.IsMining = false
 
-	tempChain := append(b.Chain, block)
+	tempChain := append(l.Chain, block)
 
-	isValid, utxo := ValidateChain(tempChain, b.ValidationServerURL)
+	isValid, utxo := ValidateChain(tempChain, l.ValidationServerURL)
 
 	if isValid {
 		// Clear Mempool of confirmed transactions (transactions that are now in this block)
-		b.MemPool = RemoveConfirmedTransactions(b.MemPool, block.Transactions)
+		l.MemPool = RemoveConfirmedTransactions(l.MemPool, block.Transactions)
 
 		// Update UTXO
-		b.UTXO = utxo
+		l.UTXO = utxo
 
 		// Update chain
-		b.Chain = tempChain
+		l.Chain = tempChain
 
 		return true
 	} else {
@@ -66,7 +44,7 @@ func (b *Blockchain) AddMinedBlockToChain(block Block) bool {
 // It will terminate if no chains are valid or once it finds a chain smaller than our current chain. It has side effects:
 //  - It removes the transactions inside the chain's blocks from the MemPool
 //  - It updates the UTXO
-func (b *Blockchain) Consensus(chains [][]Block) bool {
+func (l *LocalNode) Consensus(chains ...[]Block) bool {
 	// Sort the changes by longest first
 	sort.Slice(chains, func(index1, index2 int) bool {
 		return len(chains[index1]) < len(chains[index2])
@@ -74,18 +52,18 @@ func (b *Blockchain) Consensus(chains [][]Block) bool {
 
 	for _, chain := range chains {
 		// If the chain is smaller than our current chain, our chain was the longest, so stop.
-		if len(chain) < len(b.Chain) {
+		if len(chain) < len(l.Chain) {
 			fmt.Println("Our chain is longest, so our consensus function terminated.")
 			return false
 		}
 
-		if valid, utxo := ValidateChain(chain, b.ValidationServerURL); valid == true {
-			b.Chain = chain
-			b.UTXO = utxo
+		if valid, utxo := ValidateChain(chain, l.ValidationServerURL); valid == true {
+			l.Chain = chain
+			l.UTXO = utxo
 
 			// Clear the MemPool of any confirmed transactions
 			for _, block := range chain {
-				b.MemPool = RemoveConfirmedTransactions(b.MemPool, block.Transactions)
+				l.MemPool = RemoveConfirmedTransactions(l.MemPool, block.Transactions)
 			}
 
 			// We found a longer, valid chain.
@@ -102,12 +80,12 @@ func (b *Blockchain) Consensus(chains [][]Block) bool {
 // Finds a valid proof for a block and validates transactions from the MemPool. It removes invalid transactions.
 // It returns a pointer to a new block that will be nil if the mining process was canceled.
 // It does not add this block to the chain itself.
-func (b Blockchain) MineBlock(shouldMine *bool) *Block {
+func (l LocalNode) MineBlock(shouldMine *bool) *Block {
 	// Ensure that we are mining
 	*shouldMine = true
 
 	// Add a "coinbase" transaction that mints 10 coins to the miner (this node's public key)
-	newTransactions := append(b.MemPool, Transaction{"0", b.OperatorPublicKey, 0, 10, ""})
+	newTransactions := append(l.MemPool, Transaction{"0", l.OperatorPublicKey, 0, 10, ""})
 
 	// Sort the transactions by their timestamp
 	sort.Slice(newTransactions, func(index1, index2 int) bool {
@@ -117,19 +95,19 @@ func (b Blockchain) MineBlock(shouldMine *bool) *Block {
 	// Remove invalid transactions
 	for index, transaction := range newTransactions {
 		// If the transaction is a coinbase transaction (the first transaction) or the sender has enough coin then update their UTXO
-		if (transaction.Sender == "0" && index == 0) || (transaction.Amount < b.UTXO[transaction.Sender] && ValidateSignature(transaction, b.ValidationServerURL)) {
-			b.UTXO[transaction.Sender] -= transaction.Amount
-			b.UTXO[transaction.Recipient] += transaction.Amount
+		if (transaction.Sender == "0" && index == 0) || (transaction.Amount < l.UTXO[transaction.Sender] && ValidateSignature(transaction, l.ValidationServerURL)) {
+			l.UTXO[transaction.Sender] -= transaction.Amount
+			l.UTXO[transaction.Recipient] += transaction.Amount
 		} else {
 			newTransactions = RemoveFromTransactions(newTransactions, index)
 		}
 
 	}
 
-	blockHeader := BlockHeader{time.Now().Unix(), newTransactions, LastBlock(b.Chain).hash()}
+	blockHeader := BlockHeader{time.Now().Unix(), newTransactions, LastBlock(l.Chain).hash()}
 
 	// Create a proof with the appropriate difficulty
-	proof := Proof{Nonce: 0, DifficultyThreshold: DetermineDifficultyForChainIndex(b.Chain, len(b.Chain))}
+	proof := Proof{Nonce: 0, DifficultyThreshold: DetermineDifficultyForChainIndex(l.Chain, len(l.Chain))}
 
 	// Keep incrementing the nonce until we have a valid proof
 	for !ValidateProof(Block{blockHeader, proof}) {
@@ -188,26 +166,4 @@ func ValidateChain(blocks []Block, validationServerURL string) (bool, UTXO) {
 	}
 
 	return true, utxo
-}
-
-// A Block is a block header with a proof that when put into the format {Proof}-{BlockHeader}, can be hashed into a hex string with x leading 0s.
-type Block struct {
-	BlockHeader
-	Proof Proof // The nonce and difficulty threshold that validates this block
-}
-
-// A BlockHeader stores a timestamp, a list of transactions and the hash of the previous block.
-type BlockHeader struct {
-	Timestamp    int64         // The time when this block header was generated
-	Transactions []Transaction // The transactions the enclosing block validates
-	PreviousHash string        // The hash of the previous block
-}
-
-// A transaction stores information about a transaction with a signature.
-type Transaction struct {
-	Sender    UserPublicKey // The public key of the sender
-	Recipient UserPublicKey // The public key of the recipient
-	Amount    int           // The amount of coin transferred
-	Timestamp int64         // The time at which this transaction was made. This value does not need to be accurate, it is only for the purpose of ordering transactions in a BlockHeader.
-	Signature string        // A hex string that is an ECDSA signed representation of this transaction ({SENDER} -{AMOUNT}-> {RECIPIENT})
 }

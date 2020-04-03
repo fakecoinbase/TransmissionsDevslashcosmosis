@@ -7,12 +7,6 @@ import (
 	"time"
 )
 
-// The nonce and difficulty threshold achieved by the nonce and BlockHeader to generate proof of work.
-type Proof struct {
-	Nonce               int64 // The random factor that changes the hash
-	DifficultyThreshold int64 // The number of leading 0s required in the hash
-}
-
 // Calculate the required difficulty threshold for an index in a chain based on the past delays in timestamps.
 // Will default to 5 if chain length is less than 10.
 func DetermineDifficultyForChainIndex(chain []Block, index int) int64 {

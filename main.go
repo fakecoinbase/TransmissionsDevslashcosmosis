@@ -10,7 +10,6 @@ import (
 	"time"
 )
 
-var chain core.Blockchain
 var validationServerURL string
 
 func main() {
@@ -38,26 +37,31 @@ func main() {
 	}
 	// --------------------------------
 
-	chain = core.Blockchain{Chain: make([]core.Block, 0), MemPool: make([]core.Transaction, 0), UTXO: make(core.UTXO), ValidationServerURL: validationServerURL, OperatorPublicKey: core.UserPublicKey(operatorPublicKey)}
+	self := core.LocalNode{Chain: []core.Block{core.GenesisBlock}, MemPool: make([]core.Transaction, 0), UTXO: make(core.UTXO), ValidationServerURL: validationServerURL, OperatorPublicKey: core.UserPublicKey(operatorPublicKey)}
 
 	scheduler.Every(1).Minutes().NotImmediately().Run(func() {
 		// Clear out stale transactions
-		for index, transaction := range chain.MemPool {
+		for index, transaction := range self.MemPool {
 			// If the transaction is older than 24 hours
 			if time.Unix(transaction.Timestamp, 0).Sub(time.Now()).Hours() >= 24 {
 				// Update the MemPool with the removed transaction gone
-				chain.MemPool = core.RemoveFromTransactions(chain.MemPool, index)
+				self.MemPool = core.RemoveFromTransactions(self.MemPool, index)
 			}
 		}
 
 		// Start mining if we have enough transactions
-		if len(chain.MemPool) > 0 && chain.IsMining == false {
-			block := chain.MineBlock(&chain.IsMining)
+		if len(self.MemPool) > 0 && self.IsMining == false {
+			block := self.MineBlock(&self.IsMining)
 
 			// If we finished mining and won the race!
 			if block != nil {
-				// If mined block was valid and added to chain
-				if chain.AddMinedBlockToChain(*block) == true {
+
+				// If mined block was valid and added to chain:
+				if self.AddMinedBlockToChain(*block) == true {
+
+					// Alert all other nodes of our new valid block.
+					self.BroadcastBlock(*block)
+
 					fmt.Println("We just mined a new block and added it to the chain!")
 				} else {
 					fmt.Println("The block we just mined was not valid! It was not added to the chain and the UTXO was not updated!")
@@ -68,8 +72,6 @@ func main() {
 		}
 	})
 
-	p2p := core.NoiseWrapper{LocalBlockchain: &chain}
-	chain.P2P = p2p
-
-	p2p.Start([]string{})
+	//TODO: Get seed nodes
+	self.Start([]string{})
 }
