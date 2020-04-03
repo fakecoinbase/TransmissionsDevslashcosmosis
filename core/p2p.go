@@ -1,4 +1,4 @@
-package p2p
+package core
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/perlin-network/noise"
 	"github.com/perlin-network/noise/kademlia"
-	"github.com/transmissionsdev/cosmosis/core"
 	"os"
 	"os/signal"
 	"strings"
@@ -16,8 +15,8 @@ import (
 // It stores what could be 3 options: a block, a transaction or a bool that when true indicates a request for this node's chain/
 type NodeMessage struct {
 	// Broadcasts
-	NewBlock       core.Block
-	NewTransaction core.Transaction
+	NewBlock       Block
+	NewTransaction Transaction
 	// Requests
 	NeedChain bool
 }
@@ -44,8 +43,8 @@ func check(err error) {
 
 // Stores the local blockchain on this node as well as details about this node as a p2p node
 type NoiseWrapper struct {
-	LocalChain *core.Blockchain
-	localNode  *noise.Node
+	LocalBlockchain *Blockchain
+	localNode       *noise.Node
 }
 
 // Starts all P2P functions. Takes a list of seedNodes

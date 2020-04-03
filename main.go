@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/carlescere/scheduler"
 	"github.com/transmissionsdev/cosmosis/core"
-	"github.com/transmissionsdev/cosmosis/p2p"
 	"net/http"
 	"os"
 	"time"
@@ -69,7 +68,7 @@ func main() {
 		}
 	})
 
-	p2p := p2p.NoiseWrapper{LocalChain: &chain.Chain}
+	p2p := core.NoiseWrapper{LocalBlockchain: &chain}
 	chain.P2P = p2p
 
 	p2p.Start([]string{})

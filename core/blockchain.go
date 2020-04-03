@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"github.com/transmissionsdev/cosmosis/p2p"
 	"reflect"
 	"sort"
 	"time"
@@ -23,9 +22,9 @@ type Blockchain struct {
 	MemPool []Transaction // The waiting room of transactions that are yet to be incorporated in a block. These get cleared out every 24 hours.
 	UTXO    UTXO          // The amount of unspent transactions each user has associated with their public key
 
-	ValidationServerURL string           // A link to a server that can be used to validate signatures
-	OperatorPublicKey   UserPublicKey    // A public key that is used to identify the node when mining (so this node can receive mining rewards
-	P2P                 p2p.NoiseWrapper // A struct with useful methods to communicate with our peers
+	ValidationServerURL string        // A link to a server that can be used to validate signatures
+	OperatorPublicKey   UserPublicKey // A public key that is used to identify the node when mining (so this node can receive mining rewards
+	P2P                 NoiseWrapper  // A struct with useful methods to communicate with our peers
 
 	IsMining bool // Stores whether the node is mining or not. If the node is mining and this bool is set to false, the node will terminate its mining process.
 }
