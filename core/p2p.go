@@ -31,11 +31,11 @@ func (m nodeMessage) Marshal() []byte {
 
 	return b
 }
-func unMarshalNodeMessage(buf []byte) (nodeMessage, bool) {
+func unMarshalNodeMessage(buf []byte) (nodeMessage, error) {
 	var msg nodeMessage
 	err := json.Unmarshal(buf, &msg)
 	check(err)
-	return msg, false
+	return msg, nil
 }
 
 // check panics if err is not nil.
@@ -123,7 +123,6 @@ func (l *LocalNode) Start(seedNodes []string) {
 	node, err := noise.NewNode()
 	check(err)
 
-	// Release resources associated to node at the end of the program.
 	defer node.Close()
 
 	// Register the chatMessage Go type to the node with an associated unmarshal function.
@@ -215,6 +214,16 @@ func (l *LocalNode) Start(seedNodes []string) {
 
 	l.node = node
 	l.kademliaProtocol = overlay
+
+	// Wait 3 seconds
+	time.Sleep(3 * time.Second)
+
+	fmt.Println("We've started P2P! Now trying to get peer consensus...")
+
+	// Get peer consensus
+	l.GetPeerConsensus()
+
+	fmt.Println("Got peer consensus!")
 
 	// Wait until Ctrl+C or a termination call is done.
 	c := make(chan os.Signal, 1)
