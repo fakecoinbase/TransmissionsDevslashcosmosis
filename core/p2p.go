@@ -19,7 +19,7 @@ const (
 	needChain             // Body will be: nil
 )
 
-// It stores what could be 4 options: a block, a transaction, a node's chain or a bool that when true indicates a request for this node's chain
+// Stores a type of message and a body.
 type nodeMessage struct {
 	messageType int         // Can be: newBlock, newTransaction, thisIsMyChain, or needChain
 	body        interface{} // The actual payload (it can be many types)
@@ -45,6 +45,7 @@ func check(err error) {
 	}
 }
 
+// sendMessageToPeer sends a message to a peer directly through their address.
 func (l *LocalNode) sendMessageToPeer(message nodeMessage, address string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	err := l.node.SendMessage(ctx, address, message)
@@ -53,6 +54,7 @@ func (l *LocalNode) sendMessageToPeer(message nodeMessage, address string) error
 	return err
 }
 
+// broadcast sends a message to all peers.
 func (l *LocalNode) broadcast(message nodeMessage) {
 	for _, id := range l.kademliaProtocol.Table().Peers() {
 		err := l.sendMessageToPeer(message, id.Address)
@@ -67,8 +69,9 @@ func (l *LocalNode) broadcast(message nodeMessage) {
 	}
 }
 
+// GetPeerConsensus sends a message to all peers requesting their chain, then we choose 5 of them and run consensus on them.
 func (l *LocalNode) GetPeerConsensus() {
-	// Create a buffered channel of 5
+	// Create a channel
 	l.incomingChains = make(chan []Block)
 
 	// Ask all peers for their chain
@@ -77,10 +80,11 @@ func (l *LocalNode) GetPeerConsensus() {
 		body:        nil,
 	})
 
-	// Wait until we have 4 chains from our peers and then run our consensus function
+	// Wait until we have 4 chains from our peers and then run our consensus function.
 	l.Consensus(<-l.incomingChains, <-l.incomingChains, <-l.incomingChains, <-l.incomingChains)
 }
 
+// BroadcastBlock sends a block to all of our peers.
 func (l *LocalNode) BroadcastBlock(b Block) {
 	// Alert all peers of our new block
 	l.broadcast(nodeMessage{
@@ -90,6 +94,7 @@ func (l *LocalNode) BroadcastBlock(b Block) {
 
 }
 
+// BroadcastTransaction sends a transaction to all of our peers.
 func (l *LocalNode) BroadcastTransaction(t Transaction) {
 	// Alert all peers of a transaction we have received
 	l.broadcast(nodeMessage{
@@ -98,6 +103,7 @@ func (l *LocalNode) BroadcastTransaction(t Transaction) {
 	})
 }
 
+// SendPeerOurChain sends a specific peer our chain.
 func (l *LocalNode) SendPeerOurChain(address string) {
 	err := l.sendMessageToPeer(nodeMessage{
 		messageType: thisIsMyChain,
@@ -111,7 +117,7 @@ func (l *LocalNode) SendPeerOurChain(address string) {
 	}
 }
 
-// Starts all P2P functions. Takes a list of seedNodes
+// Starts all P2P functions. Takes a list of seedNodes.
 func (l *LocalNode) Start(seedNodes []string) {
 	// Create a new configured node.
 	node, err := noise.NewNode()
