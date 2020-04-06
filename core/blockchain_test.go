@@ -116,12 +116,14 @@ func TestLocalNode_MineBlock(t *testing.T) {
 	// Check that it didn't update the UTXO for us
 	assert.NotContains(t, localNode.UTXO, "6007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c")
 
-	// Invalid Transaction
-	localNode.MemPool = []Transaction{Transaction{Sender: "NOTREALPERSON", Recipient: "OTHERNOTREALPERSON", Amount: 999999, Timestamp: 1586117966, Signature: "f5f036c0117dd360e57affe1ad76cdb7486f6befd44a8aa201a6713426dd77891ee7263ee2b62449f44ac56f1a83caf9f813727f91f0e66d3da8ed96846e8d4d"}}
+	// Invalid Transactions Don't Make It Into Blocks (Stay in MemPool)
+	invalidTransaction := Transaction{Sender: "NOTREALPERSON", Recipient: "OTHERNOTREALPERSON", Amount: 999999, Timestamp: 1586117966, Signature: "f5f036c0117dd360e57affe1ad76cdb7486f6befd44a8aa201a6713426dd77891ee7263ee2b62449f44ac56f1a83caf9f813727f91f0e66d3da8ed96846e8d4d"}
+	localNode.MemPool = []Transaction{invalidTransaction}
 	localNode.IsMining = true
 	outputBlock2 := localNode.MineBlock(&localNode.IsMining)
 	assert.Nil(t, outputBlock2)
 	assert.False(t, localNode.IsMining)
+	assert.Contains(t, localNode.MemPool, invalidTransaction)
 
 	// Cancel Mining
 	localNode.UTXO["b61e63485c4782d6495aa0091c6785d8b6c0a945a23d9b158093bbf3d93d6bb9024e6cab467cc11b51e1b1a158637a778473418298b09a7dd39c148863b1833c"] = 100000000000000
