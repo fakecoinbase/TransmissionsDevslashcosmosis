@@ -1,11 +1,10 @@
-# Cosmosis 🌌: A cryptocurrency written in Go
+# Cosmosis 🌌: A cryptocurrency written in Go ![Tests](https://github.com/TransmissionsDev/cosmosis/workflows/Tests/badge.svg)
 
 <img
   src="https://i.imgur.com/rgED1En.png"
   width="50%"
   align="right"
 />
-
 
 **The simpliest and easiest to use cryptocurrency out there!**
 
