@@ -6,7 +6,6 @@ import (
 )
 
 func TestIsTransactionInMemPool(t *testing.T) {
-
 	there := IsTransactionInMemPool(Transaction{Signature: "test1"}, []Transaction{{Signature: "test2"}, {Signature: "test1"}, {Signature: "test3"}})
 	notThere := IsTransactionInMemPool(Transaction{Signature: "test1"}, []Transaction{{Signature: "test2"}, {Signature: "test3"}})
 
@@ -17,7 +16,6 @@ func TestIsTransactionInMemPool(t *testing.T) {
 }
 
 func TestIsTransactionInChain(t *testing.T) {
-
 	there := IsTransactionInChain(Transaction{Signature: "test1"}, []Block{{BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test1"}}}}, {BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test2"}}}}, {BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test4"}}}}})
 	notThere := IsTransactionInChain(Transaction{Signature: "test1"}, []Block{{BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test2"}}}}, {BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test3"}}}}})
 
@@ -27,7 +25,6 @@ func TestIsTransactionInChain(t *testing.T) {
 }
 
 func TestIsTransactionAlreadyInMemPoolOrChain(t *testing.T) {
-
 	inMemPoolAndChain := IsTransactionAlreadyInMemPoolOrChain(Transaction{Signature: "test1"}, []Transaction{{Signature: "test2"}, {Signature: "test1"}, {Signature: "test3"}}, []Block{{BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test1"}}}}, {BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test2"}}}}, {BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test4"}}}}})
 	inChain := IsTransactionAlreadyInMemPoolOrChain(Transaction{Signature: "test1"}, []Transaction{{Signature: "test2"}, {Signature: "test3"}}, []Block{{BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test1"}}}}, {BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test3"}}}}})
 	inMemPool := IsTransactionAlreadyInMemPoolOrChain(Transaction{Signature: "test1"}, []Transaction{{Signature: "test1"}, {Signature: "test3"}}, []Block{{BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test0"}}}}, {BlockHeader: BlockHeader{Transactions: []Transaction{{Signature: "test3"}}}}})
