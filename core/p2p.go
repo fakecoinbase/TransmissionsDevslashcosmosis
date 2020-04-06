@@ -77,7 +77,6 @@ func (l *LocalNode) sendMessageToPeer(message NodeMessage, address string) error
 
 // broadcast sends a message to all peers.
 func (l *LocalNode) broadcast(message NodeMessage) {
-
 	for _, id := range l.kademliaProtocol.Table().Peers() {
 		err := l.sendMessageToPeer(message, id.Address)
 
@@ -90,7 +89,6 @@ func (l *LocalNode) broadcast(message NodeMessage) {
 
 // GetPeerConsensus sends a message to all peers requesting their chain, then we choose 5 of them and run consensus on them.
 func (l *LocalNode) GetPeerConsensus() {
-
 	// Create a channel
 	l.incomingChains = make(chan []Block, l.MinimumChainsForConsensus)
 
@@ -115,7 +113,6 @@ func (l *LocalNode) GetPeerConsensus() {
 
 // BroadcastBlock sends a block to all of our peers.
 func (l *LocalNode) BroadcastBlock(b Block) {
-	// Alert all peers of our new block
 	l.broadcast(NodeMessage{
 		MessageType: newBlock,
 		Body:        b,
@@ -126,7 +123,6 @@ func (l *LocalNode) BroadcastBlock(b Block) {
 
 // BroadcastTransaction sends a transaction to all of our peers.
 func (l *LocalNode) BroadcastTransaction(t Transaction) {
-	// Alert all peers of a transaction we have received
 	l.broadcast(NodeMessage{
 		MessageType: newTransaction,
 		Body:        t,
@@ -274,7 +270,6 @@ func (l *LocalNode) Start(seedNodes []string) {
 
 // bootstrap pings and dials an array of network addresses which we may interact with and  discover peers from.
 func bootstrap(node *noise.Node, addresses []string) {
-
 	for _, addr := range addresses {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		vic, err := node.Ping(ctx, addr)
