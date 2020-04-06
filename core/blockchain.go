@@ -1,24 +1,38 @@
 package core
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"reflect"
 	"sort"
 	"time"
 )
 
-var coinbaseReward = 1000
-
 // Adds a transaction to the MemPool (but will do nothing to incorporate it into a block or verify it).
-func (l *LocalNode) AddTransactionToMemPool(transaction Transaction) {
-	// Run this in a separate Goroutine as IsTransactionAlreadyInMemPoolOrChain could take a while.
-	go func() {
-		// If transaction is not already in MemPool/Chain:
-		if !IsTransactionAlreadyInMemPoolOrChain(transaction, l.MemPool, l.Chain) {
-			// Add transaction to MemPool.
-			l.MemPool = append(l.MemPool, transaction)
+func (l *LocalNode) AddTransactionToMemPool(transaction Transaction, doNotBroadcast ...bool) {
+
+	//TODO: If performance becomes a problem run this in a separate goroutine
+
+	// Don't accept transactions with invalid signatures
+	if !ValidateSignature(transaction, l.ValidationServerURL) {
+		log.Warn("We just got a transaction with an invalid signature. It was not added.")
+		return
+	}
+
+	// If transaction is not already in MemPool/Chain:
+	if !IsTransactionAlreadyInMemPoolOrChain(transaction, l.MemPool, l.Chain) {
+		log.Info("We just got a new transaction!")
+
+		// Add transaction to MemPool.
+		l.MemPool = append(l.MemPool, transaction)
+
+		// Only broadcast if we aren't passed a doNotBroadcast param
+		if len(doNotBroadcast) == 0 {
+			l.BroadcastTransaction(transaction)
 		}
-	}()
+
+	} else {
+		log.Warn("We just got a duplicate transaction. It was not added.")
+	}
 
 }
 
@@ -26,9 +40,23 @@ func (l *LocalNode) AddTransactionToMemPool(transaction Transaction) {
 //  - It stops all mining processes on this node
 //	- It removes the transactions inside the block from the MemPool
 //  - It updates the UTXO
-func (l *LocalNode) AddMinedBlockToChain(block Block) bool {
+func (l *LocalNode) AddMinedBlockToChain(block Block, alternativePeerConsensusFunction ...func()) bool {
 	// Cancel mining processes as a new block has been found
 	l.IsMining = false
+
+	// If the previous hash is not the previous block's hash:
+	if block.PreviousHash != LastBlock(l.Chain).hash() {
+		// We might have missed a previous block that was broadcast to us.
+
+		// The else is only for tests. By default, only the success case will run.
+		if len(alternativePeerConsensusFunction) == 0 {
+			// We'll run peer consensus to get the missing block.
+			l.GetPeerConsensus()
+		} else {
+			// Run the alternative peer consensus function
+			alternativePeerConsensusFunction[0]()
+		}
+	}
 
 	// Create a copy of the chain with the new block
 	tempChain := append(l.Chain, block)
@@ -59,13 +87,13 @@ func (l *LocalNode) AddMinedBlockToChain(block Block) bool {
 func (l *LocalNode) Consensus(chains ...[]Block) bool {
 	// Sort the changes by longest first
 	sort.Slice(chains, func(index1, index2 int) bool {
-		return len(chains[index1]) < len(chains[index2])
+		return len(chains[index1]) > len(chains[index2])
 	})
 
 	for _, chain := range chains {
 		// If the chain is smaller than our current chain, our chain was the longest, so stop.
 		if len(chain) < len(l.Chain) {
-			fmt.Println("Our chain is longest, so our consensus function terminated.")
+			log.Info("Our chain is longest, so our consensus function terminated.")
 			return false
 		}
 
@@ -78,14 +106,17 @@ func (l *LocalNode) Consensus(chains ...[]Block) bool {
 				l.MemPool = RemoveConfirmedTransactions(l.MemPool, block.Transactions)
 			}
 
+			// Cancel mining
+			l.IsMining = false
+
 			// We found a longer, valid chain.
-			fmt.Println("We found a valid chain through our consensus function!")
+			log.Info("We found a valid chain through our consensus function!")
 			return true
 		}
 	}
 
 	// No chain was valid or chosen.
-	fmt.Println("We ran our consensus function but all chains were invalid.")
+	log.Warn("We ran our consensus function but all chains were invalid.")
 	return false
 }
 
@@ -93,6 +124,12 @@ func (l *LocalNode) Consensus(chains ...[]Block) bool {
 // It returns a pointer to a new block that will be nil if the mining process was canceled.
 // It does not add this block to the chain itself.
 func (l LocalNode) MineBlock(shouldMine *bool) *Block {
+	// Make copy of UTXO
+	newUTXO := make(UTXO)
+	for k, v := range l.UTXO {
+		newUTXO[k] = v
+	}
+
 	// Ensure that we are mining
 	*shouldMine = true
 
@@ -113,13 +150,20 @@ func (l LocalNode) MineBlock(shouldMine *bool) *Block {
 		}
 
 		// If the sender has enough coins, and the signature is valid
-		if transaction.Amount < l.UTXO[transaction.Sender] && ValidateSignature(transaction, l.ValidationServerURL) {
+		if transaction.Amount < newUTXO[transaction.Sender] && ValidateSignature(transaction, l.ValidationServerURL) {
 			// Update the balances of both parties
-			l.UTXO[transaction.Sender] -= transaction.Amount
-			l.UTXO[transaction.Recipient] += transaction.Amount
+			newUTXO[transaction.Sender] -= transaction.Amount
+			newUTXO[transaction.Recipient] += transaction.Amount
 		} else {
 			newTransactions = RemoveFromTransactions(newTransactions, index)
 		}
+	}
+
+	// Don't mine if there's only one transaction (the coinbase transaction)
+	if len(newTransactions) == 1 {
+		log.Warn("There was only one transaction (the coinbase transaction) in a block we started mining. Canceling...")
+		*shouldMine = false
+		return nil
 	}
 
 	blockHeader := BlockHeader{time.Now().Unix(), newTransactions, LastBlock(l.Chain).hash()}
@@ -169,11 +213,11 @@ func ValidateChain(blocks []Block, validationServerURL string) (bool, UTXO) {
 //  - Check that there are not more than one coinbase transaction in each block
 //  - Check that signatures are valid
 //  - Check that difficulty threshold is valid
-func ValidateBlock(index int, blocks []Block, utxo UTXO, validationServerURL string) (bool, UTXO) {
-	block := blocks[index]
+func ValidateBlock(blockIndex int, blocks []Block, utxo UTXO, validationServerURL string) (bool, UTXO) {
+	block := blocks[blockIndex]
 
 	// If the block is the genesis block:
-	if index == 0 {
+	if blockIndex == 0 {
 		// Check this is the correct genesis block
 		if reflect.DeepEqual(block, GenesisBlock) {
 			genesisTransaction := block.Transactions[0]
@@ -188,22 +232,27 @@ func ValidateBlock(index int, blocks []Block, utxo UTXO, validationServerURL str
 		}
 	}
 
-	lastBlock := blocks[index-1]
+	// Invalid if there's only one transaction (the coinbase transaction)
+	if len(block.Transactions) == 1 {
+		return false, nil
+	}
+
+	// Check that difficulty threshold is valid
+	if block.Proof.DifficultyThreshold != DetermineDifficultyForChainIndex(blocks, blockIndex) {
+		return false, nil
+	}
+
+	lastBlock := blocks[blockIndex-1]
 
 	// Check previous hash is valid and that proof is valid
 	if block.PreviousHash != lastBlock.hash() || !ValidateProof(block) {
 		return false, nil
 	}
 
-	// Check that difficulty threshold is valid
-	if block.Proof.DifficultyThreshold != DetermineDifficultyForChainIndex(blocks, index) {
-		return false, nil
-	}
-
 	// Check the transactions in it are valid
-	for index, transaction := range block.Transactions {
+	for transactionIndex, transaction := range block.Transactions {
 		// If the transaction is a coinbase transaction (the first transaction):
-		if index == 0 {
+		if transactionIndex == 0 {
 			// If this is a VALID coinbase transaction
 			if transaction.Sender == "0" && transaction.Amount == coinbaseReward {
 				// Add coins to the recipient without taking from the sender (as this is a coinbase transaction)
@@ -217,11 +266,16 @@ func ValidateBlock(index int, blocks []Block, utxo UTXO, validationServerURL str
 		}
 
 		// If the sender has enough coins, and the signature is valid
-		if transaction.Amount < utxo[transaction.Sender] && ValidateSignature(transaction, validationServerURL) {
+		if transaction.Amount <= utxo[transaction.Sender] && ValidateSignature(transaction, validationServerURL) {
 			// Update the balances of both parties
 			utxo[transaction.Sender] -= transaction.Amount
 			utxo[transaction.Recipient] += transaction.Amount
 		} else {
+			return false, nil
+		}
+
+		// Check that the transaction hasn't been made previously
+		if IsTransactionInChain(transaction, blocks[:blockIndex]) {
 			return false, nil
 		}
 

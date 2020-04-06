@@ -4,23 +4,41 @@ import (
 	"flag"
 	"fmt"
 	"github.com/carlescere/scheduler"
+	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"github.com/transmissionsdev/cosmosis/core"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
-var validationServerURL string
+var self core.LocalNode
 
 func main() {
 	var operatorPublicKey string
 	flag.StringVar(&operatorPublicKey, "publicKey", "", "A valid public key where funds from mining can be sent to your account")
-
-	flag.StringVar(&validationServerURL, "validationServer", "http://0.0.0.0:1337/verifySignature", "A full url (with http://) that operates as a valid ECDSA SECP256k1 signature validation webserver. We recommend you run one locally. Go to: https://github.com/transmissionsdev/cosmosisUtils to find instructions to run one!")
-
-	seedNodeIPs := flag.Args()
+	var validationServerURL string
+	flag.StringVar(&validationServerURL, "validationServer", "https://crows.sh/verifySignature", "A full url (with http://) that operates as a valid ECDSA SECP256k1 signature validation webserver. We recommend you run one locally. Go to: https://github.com/transmissionsdev/cosmosisUtils to find instructions to run one!")
+	var seedNodeIPsRaw string
+	flag.StringVar(&seedNodeIPsRaw, "seedNodes", "", "A list of addresses of other nodes separated by commas (Example: 75.82.156.254,25.92.256.254)")
+	var minimumChainsForConsensus int
+	flag.IntVar(&minimumChainsForConsensus, "minimumChainsForConsensus", 4, "How many chains you wish to get before making consensus.")
+	var hostJSONEndpoints bool
+	flag.BoolVar(&hostJSONEndpoints, "hostJSONEndpoints", false, "Include this flag if you would like a webserver to be hosted alongside the P2P protocol for communicating with wallets, etc.")
 
 	flag.Parse()
+
+	var seedNodeIPs = make([]string, 0)
+
+	if seedNodeIPsRaw != "" {
+		seedNodeIPs = strings.Split(seedNodeIPsRaw, ",")
+
+		// Add port to each seed node
+		for i, ip := range seedNodeIPs {
+			seedNodeIPs[i] = fmt.Sprintf("%s:%d", ip, core.PortP2P)
+		}
+	}
 
 	// ------[Validate Flags]----------
 	if operatorPublicKey == "" {
@@ -33,19 +51,20 @@ func main() {
 	}
 	_, err := client.Get(validationServerURL)
 	if err != nil {
-		fmt.Println("Your validation server URL is unreachable! See instructions to run your own here: https://github.com/transmissionsdev/cosmosisUtils\n")
 		flag.PrintDefaults()
-		os.Exit(1)
+		log.Fatal("Your validation server URL is unreachable! See instructions to run your own here: https://github.com/transmissionsdev/cosmosisUtils\n")
 	}
 	// --------------------------------
 
-	self := core.LocalNode{Chain: []core.Block{core.GenesisBlock}, MemPool: make([]core.Transaction, 0), UTXO: make(core.UTXO), ValidationServerURL: validationServerURL, OperatorPublicKey: core.UserPublicKey(operatorPublicKey)}
+	self = core.LocalNode{Chain: []core.Block{core.GenesisBlock}, MemPool: make([]core.Transaction, 0), UTXO: make(core.UTXO), ValidationServerURL: validationServerURL, OperatorPublicKey: operatorPublicKey, MinimumChainsForConsensus: minimumChainsForConsensus}
 
 	scheduler.Every(1).Minutes().NotImmediately().Run(func() {
 		// Clear out stale transactions
 		for index, transaction := range self.MemPool {
 			// If the transaction is older than 24 hours
-			if time.Unix(transaction.Timestamp, 0).Sub(time.Now()).Hours() >= 24 {
+			if time.Now().Sub(time.Unix(transaction.Timestamp, 0)).Hours() >= 24 {
+				log.Warnf("Removing a stale transaction from the MemPool.... (%+v)", transaction)
+
 				// Update the MemPool with the removed transaction gone
 				self.MemPool = core.RemoveFromTransactions(self.MemPool, index)
 			}
@@ -53,6 +72,8 @@ func main() {
 
 		// Start mining if we have enough transactions
 		if len(self.MemPool) > 0 && self.IsMining == false {
+			log.Infof("Starting to mine a block with %d transactions...", len(self.MemPool))
+
 			block := self.MineBlock(&self.IsMining)
 
 			// If we finished mining and won the race!
@@ -64,15 +85,50 @@ func main() {
 					// Alert all other nodes of our new valid block.
 					self.BroadcastBlock(*block)
 
-					fmt.Println("We just mined a new block and added it to the chain!")
+					log.Info("We just mined a new block and added it to the chain!")
 				} else {
-					fmt.Println("The block we just mined was not valid! It was not added to the chain and the UTXO was not updated!")
+					log.Warn("The block we just mined was not valid! It was not added to the chain and the UTXO was not updated!")
 				}
 			} else {
-				fmt.Println("We didn't mine a block in time, another node got the next block before us.")
+				log.Info("We didn't mine a block in time, another node got the next block before us (or mining was canceled as there were no valid transactions).")
 			}
 		}
 	})
 
-	go self.Start(seedNodeIPs)
+	if hostJSONEndpoints {
+		router := gin.Default()
+		router.POST("/newTransaction", newTransaction)
+		router.GET("/getChain", getChain)
+		router.GET("/getUTXOs", getUTXOs)
+		router.GET("/getMemPool", getMemPool)
+		go router.Run(":9000")
+	}
+
+	self.Start(seedNodeIPs)
+}
+
+func newTransaction(c *gin.Context) {
+	var json core.Transaction
+	if err := c.ShouldBindJSON(&json); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	self.AddTransactionToMemPool(json)
+
+	c.JSON(200, gin.H{
+		"received": true,
+	})
+}
+
+func getChain(c *gin.Context) {
+	c.JSON(200, self.Chain)
+}
+
+func getUTXOs(c *gin.Context) {
+	c.JSON(200, self.UTXO)
+}
+
+func getMemPool(c *gin.Context) {
+	c.JSON(200, self.MemPool)
 }

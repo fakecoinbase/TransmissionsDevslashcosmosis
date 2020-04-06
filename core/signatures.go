@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	log "github.com/sirupsen/logrus"
 )
 
 // A struct to represent a response form a signature validation server.
@@ -24,7 +25,7 @@ func ValidateSignature(transaction Transaction, validationServerURL string) bool
 		Post(validationServerURL)
 
 	if err != nil {
-		panic("Validation server is throwing an error!")
+		log.Panic("Signature validation server is returning an error!")
 	}
 
 	return resp.Result().(*ValidationResponse).ValidSignature
