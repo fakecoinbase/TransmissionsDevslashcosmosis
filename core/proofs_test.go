@@ -23,5 +23,4 @@ func TestDetermineDifficultyForChainIndex(t *testing.T) {
 
 	// Index is less than 10 (meaning there aren't enough past blocks to examine), just returning a difficulty of 5.
 	assert.Equal(t, int64(5), DetermineDifficultyForChainIndex(chain2, 9))
-
 }

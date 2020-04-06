@@ -19,7 +19,5 @@ func TestValidateSignature(t *testing.T) {
 			assert.Fail(t, "ValidateSignature did not panic with invalid validationServerURL!")
 		}
 	}()
-
 	ValidateSignature(transaction, "notreal.google.com")
-
 }
