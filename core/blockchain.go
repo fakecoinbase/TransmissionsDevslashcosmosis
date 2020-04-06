@@ -213,6 +213,7 @@ func ValidateChain(blocks []Block, validationServerURL string) (bool, UTXO) {
 //  - Check that there are not more than one coinbase transaction in each block
 //  - Check that signatures are valid
 //  - Check that difficulty threshold is valid
+//  - Check that there are not duplicate transactions in the block that appear earlier in the chain
 func ValidateBlock(blockIndex int, blocks []Block, utxo UTXO, validationServerURL string) (bool, UTXO) {
 	block := blocks[blockIndex]
 
