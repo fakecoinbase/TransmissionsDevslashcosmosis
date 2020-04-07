@@ -227,7 +227,6 @@ func ValidateBlock(blockIndex int, blocks []Block, utxo UTXO, validationServerUR
 
 			return true, utxo
 		} else {
-
 			// The genesis block has been tampered with! This is an invalid block!
 			return false, nil
 		}
