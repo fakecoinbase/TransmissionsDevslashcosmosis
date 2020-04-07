@@ -15,7 +15,17 @@ import (
 
 var self core.LocalNode
 
+const introMessage = `
+_________                                    _____        
+__  ____/___________________ ___________________(_)_______
+_  /    _  __ \_  ___/_  __  __ \  __ \_  ___/_  /__  ___/
+/ /___  / /_/ /(__  )_  / / / / / /_/ /(__  )_  / _(__  )
+\____/  \____//____/ /_/ /_/ /_/\____//____/ /_/  /____/
+`
+
 func main() {
+	fmt.Println(introMessage)
+
 	var operatorPublicKey string
 	flag.StringVar(&operatorPublicKey, "publicKey", "", "A valid public key where funds from mining can be sent to your account")
 	var validationServerURL string
