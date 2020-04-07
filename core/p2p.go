@@ -279,7 +279,7 @@ func bootstrap(node *noise.Node, addresses []string) {
 			log.Warnf("Failed to ping seed node %s. Skipping... [error: %s]\n", addr, err)
 			continue
 		} else {
-			log.Info("We made a connection with one of our seed nodes: " + vic.ID().String())
+			log.Info("We made a connection with one of our seed nodes: " + vic.ID().Address)
 		}
 	}
 }
