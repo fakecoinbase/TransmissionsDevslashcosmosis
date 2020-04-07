@@ -38,7 +38,7 @@ func (l *LocalNode) AddTransactionToMemPool(transaction Transaction, doNotBroadc
 
 // Adds a new block to the chain (by first verifying it and getting its UTXO). It has side effects:
 //  - It stops all mining processes on this node
-//	- It removes the transactions inside the block from the MemPool
+//  - It removes the transactions inside the block from the MemPool
 //  - It updates the UTXO
 func (l *LocalNode) AddMinedBlockToChain(block Block, alternativePeerConsensusFunction ...func()) bool {
 	// Cancel mining processes as a new block has been found
