@@ -9,7 +9,7 @@ import (
 var coinbaseReward int64 = 1000
 
 // The first block in our Blockchain
-var GenesisBlock = Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "b61e63485c4782d6495aa0091c6785d8b6c0a945a23d9b158093bbf3d93d6bb9024e6cab467cc11b51e1b1a158637a778473418298b09a7dd39c148863b1833c", Amount: 100000000000000, Timestamp: 1585852961, Signature: ""}}, PreviousHash: ""}, Proof: Proof{Nonce: 0, DifficultyThreshold: 0}}
+var GenesisBlock = Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 100000000000000, Timestamp: 1585852961, Signature: ""}}, PreviousHash: ""}, Proof: Proof{Nonce: 0, DifficultyThreshold: 0}}
 
 // The amount of unspent coin each user has associated with their public key
 type UTXO map[string]int64
