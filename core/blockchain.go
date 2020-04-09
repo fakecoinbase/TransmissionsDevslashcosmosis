@@ -20,19 +20,19 @@ func (l *LocalNode) AddTransactionToMemPool(transaction Transaction, doNotBroadc
 
 	// If transaction is not already in MemPool/Chain:
 	if !IsTransactionAlreadyInMemPoolOrChain(transaction, l.MemPool, l.Chain) {
-		log.Info("We just got a new transaction!")
-
-		// Add transaction to MemPool.
-		l.MemPool = append(l.MemPool, transaction)
-
-		// Only broadcast if we aren't passed a doNotBroadcast param
-		if len(doNotBroadcast) == 0 {
-			l.BroadcastTransaction(transaction)
-		}
-
-	} else {
 		log.Warn("We just got a duplicate transaction. It was not added.")
+		return
 	}
+
+	// Add transaction to MemPool.
+	l.MemPool = append(l.MemPool, transaction)
+
+	// Only broadcast if we aren't passed a doNotBroadcast param
+	if len(doNotBroadcast) == 0 {
+		l.BroadcastTransaction(transaction)
+	}
+
+	log.Info("We just got a new transaction!")
 
 }
 
