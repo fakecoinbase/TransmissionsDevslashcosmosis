@@ -31,13 +31,15 @@ type NodeMessage struct {
 	Body        interface{} // The actual payload (it can be many types)
 }
 
-func (m NodeMessage) Marshal() []byte {
-	var buf bytes.Buffer
-
+func init() {
 	gob.Register([]Block(nil))
 	gob.Register(Block{})
 	gob.Register(Transaction{})
 	gob.Register([]Transaction(nil))
+}
+
+func (m NodeMessage) Marshal() []byte {
+	var buf bytes.Buffer
 
 	enc := gob.NewEncoder(&buf)
 
