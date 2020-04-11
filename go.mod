@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/carlescere/scheduler v0.0.0-20170109141437-ee74d2f83d82
+	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.6.2
 	github.com/go-resty/resty/v2 v2.2.0
 	github.com/perlin-network/noise v1.1.3

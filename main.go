@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/carlescere/scheduler"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"github.com/transmissionsdev/cosmosis/core"
@@ -111,6 +112,7 @@ func main() {
 		router.GET("/getChain", getChain)
 		router.GET("/getUTXOs", getUTXOs)
 		router.GET("/getMemPool", getMemPool)
+		router.Use(cors.Default())
 		go router.Run(":9000")
 	}
 
