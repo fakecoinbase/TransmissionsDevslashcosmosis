@@ -108,10 +108,10 @@ func main() {
 
 	if hostJSONEndpoints {
 		router := gin.Default()
-		router.POST("/newTransaction", newTransaction)
-		router.GET("/getChain", getChain)
-		router.GET("/getUTXOs", getUTXOs)
-		router.GET("/getMemPool", getMemPool)
+		router.POST("/cosmosis/newTransaction", newTransaction)
+		router.GET("/cosmosis/getChain", getChain)
+		router.GET("/cosmosis/getUTXOs", getUTXOs)
+		router.GET("/cosmosis/getMemPool", getMemPool)
 		router.Use(cors.Default())
 		go router.Run(":9000")
 	}
