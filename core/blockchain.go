@@ -124,22 +124,26 @@ func (l *LocalNode) Consensus(chains ...[]Block) bool {
 // It returns a pointer to a new block that will be nil if the mining process was canceled.
 // It does not add this block to the chain itself.
 func (l LocalNode) MineBlock(shouldMine *bool) *Block {
+	// Ensure that we are mining
+	*shouldMine = true
+
 	// Make copy of UTXO
 	newUTXO := make(UTXO)
 	for k, v := range l.UTXO {
 		newUTXO[k] = v
 	}
 
-	// Ensure that we are mining
-	*shouldMine = true
-
-	// Add a "coinbase" transaction that mints the correct amount of coins to the miner (this node's public key)
-	newTransactions := append(l.MemPool, Transaction{"0", l.OperatorPublicKey, coinbaseReward, 0, ""})
+	// Create a copy of the MemPool
+	newTransactions := make([]Transaction, len(l.MemPool))
+	copy(newTransactions, l.MemPool)
 
 	// Sort the transactions by their timestamp
 	sort.Slice(newTransactions, func(index1, index2 int) bool {
 		return newTransactions[index1].Timestamp < newTransactions[index2].Timestamp
 	})
+
+	// Prepend a "coinbase" transaction that mints the correct amount of coins to the miner (this node's public key)
+	newTransactions = append([]Transaction{{"0", l.OperatorPublicKey, coinbaseReward, time.Now().Unix(), ""}}, newTransactions...)
 
 	// Remove invalid transactions
 	for index, transaction := range newTransactions {
