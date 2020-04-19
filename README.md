@@ -1,12 +1,17 @@
 # Cosmosis 🌌: A cryptocurrency written in Go ![Tests](https://github.com/TransmissionsDev/cosmosis/workflows/Tests/badge.svg)
 
+<p align="center">
+<a href="https://roamresearch.com/#/app/t11s/page/BIYVRS82v"><strong>Read the Whitepaper 📄</strong></a>
+</p>
+
+
 <img
   src="https://i.imgur.com/rgED1En.png"
   width="50%"
   align="right"
 />
 
-**The simpliest and easiest to use cryptocurrency out there!**
+**The simpliest and easiest to use cryptocurrency out there!** 
 
 
 - **Easy to develop:** The codebase is lean and simple. Clean Go code with few dependencies.
