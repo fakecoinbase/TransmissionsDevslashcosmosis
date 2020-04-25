@@ -6,13 +6,13 @@ import (
 )
 
 // The reward given to miners for mining a block
-var coinbaseReward int64 = 1000
+var coinbaseReward uint64 = 1000
 
 // The first block in our Blockchain
 var GenesisBlock = Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 100000000000000, Timestamp: 1585852961, Signature: ""}}, PreviousHash: ""}, Proof: Proof{Nonce: 0, DifficultyThreshold: 0}}
 
 // The amount of unspent coin each user has associated with their public key
-type UTXO map[string]int64
+type UTXO map[string]uint64
 
 // A Blockchain is a struct that stores a Chain of Blocks, as well as MemPool and manages its own UTXO map.
 // It also stores a ValidationServerURL and an Operator Public key which is used to identify that node when mining
@@ -56,7 +56,7 @@ type BlockHeader struct {
 type Transaction struct {
 	Sender    string // The public key of the sender (ECDSA SECP256k1)
 	Recipient string // The public key of the recipient (ECDSA SECP256k1)
-	Amount    int64  // The amount of coin transferred
+	Amount    uint64 // The amount of coin transferred
 	Timestamp int64  // The time at which this transaction was made. This value does not need to be accurate, it is only for the purpose of ordering transactions in a BlockHeader.
 	Signature string // A hex string that is an ECDSA signed representation of this transaction ({SENDER} -{AMOUNT}-> {RECIPIENT} ({TIMESTAMP}))
 }

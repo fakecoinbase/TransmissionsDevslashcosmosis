@@ -154,7 +154,7 @@ func (l LocalNode) MineBlock(shouldMine *bool) *Block {
 		}
 
 		// If the sender has enough coins, and the signature is valid
-		if transaction.Amount < newUTXO[transaction.Sender] && ValidateSignature(transaction, l.ValidationServerURL) {
+		if transaction.Amount > 0 && transaction.Amount <= newUTXO[transaction.Sender] && ValidateSignature(transaction, l.ValidationServerURL) {
 			// Update the balances of both parties
 			newUTXO[transaction.Sender] -= transaction.Amount
 			newUTXO[transaction.Recipient] += transaction.Amount
@@ -270,7 +270,7 @@ func ValidateBlock(blockIndex int, blocks []Block, utxo UTXO, validationServerUR
 		}
 
 		// If the sender has enough coins, and the signature is valid
-		if transaction.Amount <= utxo[transaction.Sender] && ValidateSignature(transaction, validationServerURL) {
+		if transaction.Amount > 0 && transaction.Amount <= utxo[transaction.Sender] && ValidateSignature(transaction, validationServerURL) {
 			// Update the balances of both parties
 			utxo[transaction.Sender] -= transaction.Amount
 			utxo[transaction.Recipient] += transaction.Amount
