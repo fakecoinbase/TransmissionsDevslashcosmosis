@@ -7,6 +7,13 @@ import (
 
 var validationServer = "https://crows.sh/verifySignature"
 
+func copyChain(originalSlice []Block) []Block {
+	b := make([]Block, len(originalSlice))
+	copy(b, originalSlice)
+
+	return b
+}
+
 func TestLocalNode_AddTransactionToMemPool(t *testing.T) {
 	localNode := LocalNode{Chain: []Block{GenesisBlock}, MemPool: make([]Transaction, 0), UTXO: make(UTXO), ValidationServerURL: validationServer, OperatorPublicKey: "0", MinimumChainsForConsensus: 1}
 
@@ -130,7 +137,7 @@ func TestLocalNode_MineBlock(t *testing.T) {
 	localNode.MemPool = []Transaction{Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 15, Timestamp: 1586117966, Signature: "3046022100d158259aae3c7c9e3e6cd33a3b47134723ddc4cae25484e8a5df28f45ee462fd022100b6c6600f89a3ef050a8aab14c8a96ca5b5b9c8fa358945c9f53dda1b488dd43c"}}
 	localNode.IsMining = true
 
-	//README NOTE: This test can be a little flaky due to timing with goroutines.
+	// NOTE: This test can be a little flaky due to timing with goroutines.
 	go func() {
 		localNode.IsMining = false
 	}()
@@ -154,70 +161,95 @@ func TestValidateChain(t *testing.T) {
 }
 
 func TestValidateBlock(t *testing.T) {
-	chain := []Block{Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 100000000000000, Timestamp: 1585852961, Signature: ""}}, PreviousHash: ""}, Proof: Proof{Nonce: 0, DifficultyThreshold: 0}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119312, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 15, Timestamp: 1586117966, Signature: "3046022100d158259aae3c7c9e3e6cd33a3b47134723ddc4cae25484e8a5df28f45ee462fd022100b6c6600f89a3ef050a8aab14c8a96ca5b5b9c8fa358945c9f53dda1b488dd43c"}}, PreviousHash: "a5b4f08485f4580e2358a50f495cdd4c4e4e383bebff1544cf99245770352d60"}, Proof: Proof{Nonce: 1777869, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119372, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 15, Timestamp: 1586119287, Signature: "3046022100e832f48b330701fe1cfc53946d42b6ba4465383511b0fa24ebdf6141035a7184022100afaffd679dbc17d8ecd33c1b5a95bfff56ec8e08c471a05446eb6bbe81da0e48"}}, PreviousHash: "d7d142a5bcf2513fcd639438920f46ee62f53954d8a3530c6d193312fee76688"}, Proof: Proof{Nonce: 199169, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119432, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 15, Timestamp: 1586119336, Signature: "304502200acf2f6eb3169b6d4d7ca28a55cbb64ef91ac2e55943c0f0b55d67a151baf097022100eab71b2f289e8feedd1899d8a65f7f1190073133fa7cdc728209fa8615bce286"}}, PreviousHash: "2f9a66a3361b628ef3f9bd6ce657375eea370cb41428eb5ae7c530c37c935456"}, Proof: Proof{Nonce: 1531439, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119492, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 16, Timestamp: 1586119430, Signature: "30440220668995bb74c17b0a9da0772f7f21c4a36ebe5739ae2eeda385bb2ca891a79e5402203090f57536eec6a5dd6cf3e3629b9738c38cafea71195b021c4ddeba49454396"}}, PreviousHash: "a8b6009a30eceaef14e042a3b407d4f9ee7eced6afa57291ff02ad0575d31f03"}, Proof: Proof{Nonce: 4573631, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119552, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 17, Timestamp: 1586119465, Signature: "3046022100dfaa90118a615bd164f7ce5bbad595b13c89e0913328c69f60237c4f7c4f1dc80221009d1f1e5c5cbfd4305780549f4d09a7aff6e81b4d8a6faf499e3789a7bf183e8a"}}, PreviousHash: "1b0ebdcd3eb6ee8fcf4baabc512ae79ab4dc3ca461822f251f70c235bcf2d65c"}, Proof: Proof{Nonce: 603227, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119612, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 17, Timestamp: 1586119543, Signature: "304502205eb70b3490b02690f14e46bdabf284030e6208cf64104433f9256960ceffbe09022100e5647081dd948589a736f65e7f94a394ecdc0ca3cd2a0549f93327084df9cb7e"}}, PreviousHash: "0c5fb0e4634d1be9b18c872c34bc6fe6d5abd1d7892c393a574a9f7cd2d5f65f"}, Proof: Proof{Nonce: 2223280, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119732, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 18, Timestamp: 1586119598, Signature: "3044022061d0207613c79f4ef804962f4788e39e58899c221546c4d3584fa9cb3ba938680220631066c5741c3a27de5e1f246b3ee3270f0daa93bdf31412f823d49f65c10700"}}, PreviousHash: "c7d2280b20a35eb977d881b4dd7d20edc6681d183ab82d230656b8b76dc82c23"}, Proof: Proof{Nonce: 1376188, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119792, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 19, Timestamp: 1586119687, Signature: "304402206ff8237cd53d3ba3000dea2f898f146a67d9f8d52842d22612e2f5e384f7ce24022049d0bf48d92d9ea95e2e3aa07dcf02adcab7e7b6127bf1d1e97efc9c512af97f"}}, PreviousHash: "7fbc21aa7a5d5aab5af7c446dab3daf3bf590ea2f9915e4a9ef2432fee0b5ad0"}, Proof: Proof{Nonce: 2248352, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119852, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 20, Timestamp: 1586119765, Signature: "3045022100e8cdfe3a9a87a2eda134f2fa34d286cfaeb1710bda348436f8fe177739444d0d0220089ef5c7e6aa1ce9c10ae2d217f833d0aab339cbefa81a7379f5957745302e02"}}, PreviousHash: "4a86c8870f5bbee49bb0184a0956df6bbea1a7d411a1f4dcb8fa31ed7a1ac5ca"}, Proof: Proof{Nonce: 970577, DifficultyThreshold: 5}}}
+	cleanChain := []Block{Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 100000000000000, Timestamp: 1585852961, Signature: ""}}, PreviousHash: ""}, Proof: Proof{Nonce: 0, DifficultyThreshold: 0}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119312, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 15, Timestamp: 1586117966, Signature: "3046022100d158259aae3c7c9e3e6cd33a3b47134723ddc4cae25484e8a5df28f45ee462fd022100b6c6600f89a3ef050a8aab14c8a96ca5b5b9c8fa358945c9f53dda1b488dd43c"}}, PreviousHash: "a5b4f08485f4580e2358a50f495cdd4c4e4e383bebff1544cf99245770352d60"}, Proof: Proof{Nonce: 1777869, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119372, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 15, Timestamp: 1586119287, Signature: "3046022100e832f48b330701fe1cfc53946d42b6ba4465383511b0fa24ebdf6141035a7184022100afaffd679dbc17d8ecd33c1b5a95bfff56ec8e08c471a05446eb6bbe81da0e48"}}, PreviousHash: "d7d142a5bcf2513fcd639438920f46ee62f53954d8a3530c6d193312fee76688"}, Proof: Proof{Nonce: 199169, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119432, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 15, Timestamp: 1586119336, Signature: "304502200acf2f6eb3169b6d4d7ca28a55cbb64ef91ac2e55943c0f0b55d67a151baf097022100eab71b2f289e8feedd1899d8a65f7f1190073133fa7cdc728209fa8615bce286"}}, PreviousHash: "2f9a66a3361b628ef3f9bd6ce657375eea370cb41428eb5ae7c530c37c935456"}, Proof: Proof{Nonce: 1531439, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119492, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 16, Timestamp: 1586119430, Signature: "30440220668995bb74c17b0a9da0772f7f21c4a36ebe5739ae2eeda385bb2ca891a79e5402203090f57536eec6a5dd6cf3e3629b9738c38cafea71195b021c4ddeba49454396"}}, PreviousHash: "a8b6009a30eceaef14e042a3b407d4f9ee7eced6afa57291ff02ad0575d31f03"}, Proof: Proof{Nonce: 4573631, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119552, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 17, Timestamp: 1586119465, Signature: "3046022100dfaa90118a615bd164f7ce5bbad595b13c89e0913328c69f60237c4f7c4f1dc80221009d1f1e5c5cbfd4305780549f4d09a7aff6e81b4d8a6faf499e3789a7bf183e8a"}}, PreviousHash: "1b0ebdcd3eb6ee8fcf4baabc512ae79ab4dc3ca461822f251f70c235bcf2d65c"}, Proof: Proof{Nonce: 603227, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119612, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 17, Timestamp: 1586119543, Signature: "304502205eb70b3490b02690f14e46bdabf284030e6208cf64104433f9256960ceffbe09022100e5647081dd948589a736f65e7f94a394ecdc0ca3cd2a0549f93327084df9cb7e"}}, PreviousHash: "0c5fb0e4634d1be9b18c872c34bc6fe6d5abd1d7892c393a574a9f7cd2d5f65f"}, Proof: Proof{Nonce: 2223280, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119732, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 18, Timestamp: 1586119598, Signature: "3044022061d0207613c79f4ef804962f4788e39e58899c221546c4d3584fa9cb3ba938680220631066c5741c3a27de5e1f246b3ee3270f0daa93bdf31412f823d49f65c10700"}}, PreviousHash: "c7d2280b20a35eb977d881b4dd7d20edc6681d183ab82d230656b8b76dc82c23"}, Proof: Proof{Nonce: 1376188, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119792, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 19, Timestamp: 1586119687, Signature: "304402206ff8237cd53d3ba3000dea2f898f146a67d9f8d52842d22612e2f5e384f7ce24022049d0bf48d92d9ea95e2e3aa07dcf02adcab7e7b6127bf1d1e97efc9c512af97f"}}, PreviousHash: "7fbc21aa7a5d5aab5af7c446dab3daf3bf590ea2f9915e4a9ef2432fee0b5ad0"}, Proof: Proof{Nonce: 2248352, DifficultyThreshold: 5}}, Block{BlockHeader: BlockHeader{Timestamp: 1586119852, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 1000, Timestamp: 0, Signature: ""}, Transaction{Sender: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Recipient: "046007e213c57ccab18af3f3b385893da75514ab691216152955d70937744dbe040de0ea504ebe29bce2476ae37c794cf5e7d96c8bc2ad153eb434b148f1af6f6c", Amount: 20, Timestamp: 1586119765, Signature: "3045022100e8cdfe3a9a87a2eda134f2fa34d286cfaeb1710bda348436f8fe177739444d0d0220089ef5c7e6aa1ce9c10ae2d217f833d0aab339cbefa81a7379f5957745302e02"}}, PreviousHash: "4a86c8870f5bbee49bb0184a0956df6bbea1a7d411a1f4dcb8fa31ed7a1ac5ca"}, Proof: Proof{Nonce: 970577, DifficultyThreshold: 5}}}
 
-	// README NOTE: The only reason we can pass a blank UTXO in all of these calls to ValidateBlock is because the miner of each block was the sender
+	// NOTE: The only reason we can pass a blank UTXO in all of these calls to ValidateBlock is because the miner of each block was the sender
 
 	// Fully Valid Block
-	validBlock, validUTXO := ValidateBlock(9, chain, make(UTXO), validationServer)
+	validBlock, validUTXO := ValidateBlock(9, cleanChain, make(UTXO), validationServer)
 	assert.True(t, validBlock)
 	assert.Contains(t, validUTXO, "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0")
 	assert.NotContains(t, validUTXO, "0")
 
 	// Valid Genesis Block
-	validGenesis, genesisUTXO := ValidateBlock(0, chain, make(UTXO), validationServer)
+	validGenesis, genesisUTXO := ValidateBlock(0, cleanChain, make(UTXO), validationServer)
 	assert.True(t, validGenesis)
 	assert.Contains(t, genesisUTXO, "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0")
 	assert.NotContains(t, genesisUTXO, "0")
 
 	// Invalid Genesis Block
-	chain[0] = Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "NOTREALPERSON", Amount: 1, Timestamp: 1585852961, Signature: ""}}}}
-	invalidGenesis, invalidGenesisUTXO := ValidateBlock(0, chain, make(UTXO), validationServer)
+	chain2 := copyChain(cleanChain)
+	chain2[0] = Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "NOTREALPERSON", Amount: 1, Timestamp: 1585852961, Signature: ""}}}}
+	invalidGenesis, invalidGenesisUTXO := ValidateBlock(0, chain2, make(UTXO), validationServer)
 	assert.False(t, invalidGenesis)
 	assert.Nil(t, invalidGenesisUTXO)
 
 	// Block With Only Coinbase Transaction
-	chain[1].Transactions = []Transaction{Transaction{Sender: "0", Recipient: "NOTREALPERSON", Amount: 1, Timestamp: 1585852961, Signature: ""}}
-	blockWithOnlyGenesisTransactionValid, invalidBlockUTXO := ValidateBlock(1, chain, make(UTXO), validationServer)
+	chain3 := copyChain(cleanChain)
+	chain3[1].Transactions = []Transaction{Transaction{Sender: "0", Recipient: "NOTREALPERSON", Amount: 1, Timestamp: 1585852961, Signature: ""}}
+	blockWithOnlyGenesisTransactionValid, invalidBlockUTXO := ValidateBlock(1, chain3, make(UTXO), validationServer)
 	assert.False(t, blockWithOnlyGenesisTransactionValid)
 	assert.Nil(t, invalidBlockUTXO)
 
 	// Block With Invalid Difficulty
-	chain[2].Proof.DifficultyThreshold = 999
-	blockWithInvalidDifficulty, invalidDifficultyUTXO := ValidateBlock(2, chain, make(UTXO), validationServer)
+	chain4 := copyChain(cleanChain)
+	chain4[2].Proof.DifficultyThreshold = 999
+	blockWithInvalidDifficulty, invalidDifficultyUTXO := ValidateBlock(2, chain4, make(UTXO), validationServer)
 	assert.False(t, blockWithInvalidDifficulty)
 	assert.Nil(t, invalidDifficultyUTXO)
 
 	// Block With Invalid Coinbase Transaction
-	chain[3].Transactions[0].Amount = coinbaseReward + 9999
-	chain[3].PreviousHash = chain[2].hash()
-	chain[3].Proof.Nonce = 1956711
+	chain5 := copyChain(cleanChain)
+	chain5[3].Transactions[0].Amount = coinbaseReward + 9999
+	chain5[3].PreviousHash = chain5[2].hash()
+	chain5[3].Proof.Nonce = 2245373
 
-	blockWithInvalidCoinbaseTransaction, invalidCoinbaseUTXO := ValidateBlock(3, chain, make(UTXO), validationServer)
+	blockWithInvalidCoinbaseTransaction, invalidCoinbaseUTXO := ValidateBlock(3, chain5, make(UTXO), validationServer)
 	assert.False(t, blockWithInvalidCoinbaseTransaction)
 	assert.Nil(t, invalidCoinbaseUTXO)
 
 	// Block With Invalid Previous Hash
-	chain[4].PreviousHash = "NOTVALID"
-	blockWithInvalidPreviousHash, invalidPreviousHashUTXO := ValidateBlock(4, chain, make(UTXO), validationServer)
+	chain6 := copyChain(cleanChain)
+	chain6[4].PreviousHash = "NOTVALID"
+	chain6[4].Proof.Nonce = 6721917
+
+	blockWithInvalidPreviousHash, invalidPreviousHashUTXO := ValidateBlock(4, chain6, make(UTXO), validationServer)
 	assert.False(t, blockWithInvalidPreviousHash)
 	assert.Nil(t, invalidPreviousHashUTXO)
 
 	// Block With Invalid Signature
-	chain[5].PreviousHash = chain[4].hash()
-	chain[5].Transactions[1].Signature = "NOTVALID"
-	chain[5].Proof.Nonce = 639780
+	chain7 := copyChain(cleanChain)
+	chain7[5].PreviousHash = chain7[4].hash()
+	chain7[5].Transactions[1].Signature = "NOTVALID"
+	chain7[5].Proof.Nonce = 879574
 
-	blockWithInvalidSignature, invalidSignatureHashUTXO := ValidateBlock(5, chain, make(UTXO), validationServer)
+	blockWithInvalidSignature, invalidSignatureHashUTXO := ValidateBlock(5, chain7, make(UTXO), validationServer)
 	assert.False(t, blockWithInvalidSignature)
 	assert.Nil(t, invalidSignatureHashUTXO)
 
 	// Block With Duplicate Transaction
-	chain[6].PreviousHash = chain[5].hash()
-	chain[6].Transactions[1] = chain[2].Transactions[1]
-	chain[6].Proof.Nonce = 670453
+	chain8 := copyChain(cleanChain)
+	chain8[6].PreviousHash = chain8[5].hash()
+	chain8[6].Transactions[1] = chain8[2].Transactions[1]
+	chain8[6].Proof.Nonce = 793188
 
-	blockWithDuplicateTransaction, duplicateTransactionUTXO := ValidateBlock(6, chain, make(UTXO), validationServer)
+	blockWithDuplicateTransaction, duplicateTransactionUTXO := ValidateBlock(6, chain8, make(UTXO), validationServer)
 	assert.False(t, blockWithDuplicateTransaction)
 	assert.Nil(t, duplicateTransactionUTXO)
+
+	// Block With Transaction Where Sender Has 0 Coins
+	chain9 := copyChain(cleanChain)
+	chain9[1].PreviousHash = chain8[0].hash()
+	chain9[1].Transactions[1] = Transaction{
+		Sender:    "04a92df2046a9ee5fb621c0027ff1ec148cad1cda120571dfab3f3fce91a65cedcfcfe7b017331397e85d11ba488939a8206f419b0a50e87f33cb62d8d1d714c19",
+		Recipient: "048f0e62afb1ac9002af6ee35013931bd2e75c368c4bd59c88eeb78a93263d006eed814196ce227ca701fdecd6e533013c11d2e6519fd1a8759694f6b512b28ca0",
+		Amount:    10,
+		Timestamp: 1588111338,
+		Signature: "3046022100e8f60f9831b85cf7fe164166934bc4a87c3ba5d6090b1d43f56317bb199a4cd5022100d66c57380784581fe48fada6d29fc647ac52264120d257793461746874a4e0f0",
+	}
+	chain9[1].Proof.Nonce = 2027378
+
+	blockWithInvalidTransaction, invalidTransactionUTXO := ValidateBlock(1, chain9, make(UTXO), validationServer)
+	assert.False(t, blockWithInvalidTransaction)
+	assert.Nil(t, invalidTransactionUTXO)
 }
