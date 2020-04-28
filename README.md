@@ -20,7 +20,7 @@
 
 
 <p align="center">
-<a href="https://crows.sh/cosmosis"><strong>Explore the Cosmosis wallet app [WIP]&nbsp;&nbsp;▶</strong></a>
+<a href="https://meridian-wallet.now.sh/"><strong>Explore the Cosmosis Wallet App (Meridian Wallet) &nbsp;&nbsp;▶</strong></a>
 </p>
 
 ## 🛠 Developer Tools
