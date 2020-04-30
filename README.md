@@ -11,12 +11,12 @@
   align="right"
 />
 
-**The simpliest and easiest to use cryptocurrency out there!** 
+**The simplest and easiest to use cryptocurrency out there!** 
 
 
 - **Easy to develop:** The codebase is lean and simple. Clean Go code with few dependencies.
 - **Universal:** The Cosmosis APIs are the easiest to work with out of any cryptocurrency. 
-- **Secure:** It's a real blockchain, so you have all the safety guarentees of the leading cryptocurrency!
+- **Secure:** It's a real blockchain, so you have all the safety guarantees of the leading cryptocurrency!
 
 
 <p align="center">
