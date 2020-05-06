@@ -7,11 +7,6 @@ import (
 	"time"
 )
 
-// Checks if a transaction is a positive number, the sender has enough coins the make the transaction, and that the signature is valid.
-func IsTransactionValid(transaction Transaction, utxo UTXO, validationServerURL string) bool {
-	return transaction.Amount > 0 && transaction.Amount <= utxo[transaction.Sender] && ValidateSignature(transaction, validationServerURL)
-}
-
 // Adds a transaction to the MemPool (but will do nothing to incorporate it into a block or verify it).
 func (l *LocalNode) AddTransactionToMemPool(transaction Transaction, doNotBroadcast ...bool) {
 	//TODO: If performance becomes a problem run this in a separate goroutine
@@ -152,7 +147,7 @@ func (l LocalNode) MineBlock(shouldMine *bool) *Block {
 	// Add all valid memPool transactions to the newTransactions slice
 	for _, transaction := range memPool {
 		// If the transaction is valid
-		if IsTransactionValid(transaction, newUTXO, l.ValidationServerURL) {
+		if ValidateTransaction(transaction, newUTXO, l.ValidationServerURL) {
 			// Update the balances of both parties
 			newUTXO[transaction.Sender] -= transaction.Amount
 			newUTXO[transaction.Recipient] += transaction.Amount
@@ -268,7 +263,7 @@ func ValidateBlock(blockIndex int, blocks []Block, utxo UTXO, validationServerUR
 		}
 
 		// If the transaction is valid
-		if IsTransactionValid(transaction, utxo, validationServerURL) {
+		if ValidateTransaction(transaction, utxo, validationServerURL) {
 			// Update the balances of both parties
 			utxo[transaction.Sender] -= transaction.Amount
 			utxo[transaction.Recipient] += transaction.Amount
@@ -284,4 +279,9 @@ func ValidateBlock(blockIndex int, blocks []Block, utxo UTXO, validationServerUR
 	}
 
 	return true, utxo
+}
+
+// Checks if a transaction is a positive number, the sender has enough coins the make the transaction, and that the signature is valid.
+func ValidateTransaction(transaction Transaction, utxo UTXO, validationServerURL string) bool {
+	return transaction.Amount > 0 && transaction.Amount <= utxo[transaction.Sender] && ValidateSignature(transaction, validationServerURL)
 }
