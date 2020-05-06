@@ -7,9 +7,13 @@ import (
 	"time"
 )
 
+// Checks if a transaction is a positive number, the sender has enough coins the make the transaction, and that the signature is valid.
+func IsTransactionValid(transaction Transaction, utxo UTXO, validationServerURL string) bool {
+	return transaction.Amount > 0 && transaction.Amount <= utxo[transaction.Sender] && ValidateSignature(transaction, validationServerURL)
+}
+
 // Adds a transaction to the MemPool (but will do nothing to incorporate it into a block or verify it).
 func (l *LocalNode) AddTransactionToMemPool(transaction Transaction, doNotBroadcast ...bool) {
-
 	//TODO: If performance becomes a problem run this in a separate goroutine
 
 	// Don't accept transactions with invalid signatures
@@ -134,32 +138,26 @@ func (l LocalNode) MineBlock(shouldMine *bool) *Block {
 	}
 
 	// Create a copy of the MemPool
-	newTransactions := make([]Transaction, len(l.MemPool))
-	copy(newTransactions, l.MemPool)
+	memPool := make([]Transaction, len(l.MemPool))
+	copy(memPool, l.MemPool)
 
-	// Sort the transactions by their timestamp
-	sort.Slice(newTransactions, func(index1, index2 int) bool {
-		return newTransactions[index1].Timestamp < newTransactions[index2].Timestamp
+	// Sort the MemPool by each transaction's timestamp
+	sort.Slice(memPool, func(index1, index2 int) bool {
+		return memPool[index1].Timestamp < memPool[index2].Timestamp
 	})
 
-	// Prepend a "coinbase" transaction that mints the correct amount of coins to the miner (this node's public key)
-	newTransactions = append([]Transaction{{"0", l.OperatorPublicKey, coinbaseReward, time.Now().Unix(), ""}}, newTransactions...)
+	// Create a newTransactions slice and prepend a "coinbase" transaction that mints the correct amount of coins to the miner (this node's public key)
+	newTransactions := []Transaction{{"0", l.OperatorPublicKey, coinbaseReward, time.Now().Unix(), ""}}
 
-	// Remove invalid transactions
-	for index, transaction := range newTransactions {
-		// If the transaction is a coinbase transaction (the first transaction):
-		if index == 0 {
-			// Skip validation.
-			continue
-		}
-
-		// If the sender has enough coins, and the signature is valid
-		if transaction.Amount > 0 && transaction.Amount <= newUTXO[transaction.Sender] && ValidateSignature(transaction, l.ValidationServerURL) {
+	// Add all valid memPool transactions to the newTransactions slice
+	for _, transaction := range memPool {
+		// If the transaction is valid
+		if IsTransactionValid(transaction, newUTXO, l.ValidationServerURL) {
 			// Update the balances of both parties
 			newUTXO[transaction.Sender] -= transaction.Amount
 			newUTXO[transaction.Recipient] += transaction.Amount
-		} else {
-			newTransactions = RemoveFromTransactions(newTransactions, index)
+			// Add transaction to block's newTransactions
+			newTransactions = append(newTransactions, transaction)
 		}
 	}
 
@@ -269,8 +267,8 @@ func ValidateBlock(blockIndex int, blocks []Block, utxo UTXO, validationServerUR
 			continue
 		}
 
-		// If the sender has enough coins, and the signature is valid
-		if transaction.Amount > 0 && transaction.Amount <= utxo[transaction.Sender] && ValidateSignature(transaction, validationServerURL) {
+		// If the transaction is valid
+		if IsTransactionValid(transaction, utxo, validationServerURL) {
 			// Update the balances of both parties
 			utxo[transaction.Sender] -= transaction.Amount
 			utxo[transaction.Recipient] += transaction.Amount

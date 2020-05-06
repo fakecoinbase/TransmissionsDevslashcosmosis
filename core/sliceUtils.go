@@ -1,16 +1,12 @@
 package core
 
 // IsTransactionAlreadyInMemPoolOrChain checks whether the transaction already exists in a given MemPool + Blockchain.
-// Designed to be efficient by comparing timestamps:
-// once it gets to a point where it's finding transactions that are more than 48 hours before this transaction, it will stop searching.
 func IsTransactionAlreadyInMemPoolOrChain(t Transaction, memPool []Transaction, chain []Block) bool {
 	return IsTransactionInMemPool(t, memPool) || IsTransactionInChain(t, chain)
 }
 
 // IsTransactionAlreadyInMemPoolOrChain checks whether the transaction already exists in a given MemPool.
-//TODO: Make efficient using timestamps
 func IsTransactionInMemPool(t Transaction, memPool []Transaction) bool {
-
 	for i := len(memPool) - 1; i >= 0; i-- {
 		memPoolTransaction := memPool[i]
 
@@ -23,9 +19,7 @@ func IsTransactionInMemPool(t Transaction, memPool []Transaction) bool {
 }
 
 // IsTransactionInChain checks whether the transaction already exists in a given Blockchain.
-//TODO: Make efficient using timestamps
 func IsTransactionInChain(t Transaction, chain []Block) bool {
-
 	for i := len(chain) - 1; i >= 0; i-- {
 
 		chainBlock := chain[i]
@@ -43,9 +37,15 @@ func IsTransactionInChain(t Transaction, chain []Block) bool {
 	return false
 }
 
-// Gets the most recent link in a chain of blocks.
-func LastBlock(chain []Block) Block {
-	return chain[len(chain)-1]
+// Checks if a transaction is in a list of confirmed transactions.
+func isTransactionConfirmed(transaction Transaction, confirmedTransactions []Transaction) bool {
+	for _, confirmedTransaction := range confirmedTransactions {
+		if transaction == confirmedTransaction {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Removes a transaction from a slice at x index.
@@ -66,15 +66,9 @@ func RemoveConfirmedTransactions(memPool []Transaction, confirmedTransactions []
 	return filteredMemPool
 }
 
-// Checks if a transaction is in a list of confirmed transactions.
-func isTransactionConfirmed(transaction Transaction, confirmedTransactions []Transaction) bool {
-	for _, confirmedTransaction := range confirmedTransactions {
-		if transaction == confirmedTransaction {
-			return true
-		}
-	}
-
-	return false
+// Gets the most recent link in a chain of blocks.
+func LastBlock(chain []Block) Block {
+	return chain[len(chain)-1]
 }
 
 // Calculates the mean of a slice.

@@ -125,7 +125,7 @@ func TestLocalNode_MineBlock(t *testing.T) {
 
 	// Invalid Transactions Don't Make It Into Blocks (Stay in MemPool)
 	invalidTransaction := Transaction{Sender: "NOTREALPERSON", Recipient: "OTHERNOTREALPERSON", Amount: 999999, Timestamp: 1586117966, Signature: "wrong signature"}
-	localNode.MemPool = []Transaction{invalidTransaction}
+	localNode.MemPool = []Transaction{invalidTransaction, invalidTransaction}
 	localNode.IsMining = true
 	outputBlock2 := localNode.MineBlock(&localNode.IsMining)
 	assert.Nil(t, outputBlock2)
