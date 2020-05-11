@@ -74,7 +74,7 @@ func main() {
 		i := 0
 		for _, transaction := range self.MemPool {
 			// If transaction is younger than 24 hours
-			if time.Now().Sub(time.Unix(transaction.Timestamp, 0)).Hours() <= 24 {
+			if time.Now().Sub(time.Unix(transaction.Timestamp, 0)).Hours() < 24 {
 				self.MemPool[i] = transaction
 				i++
 			} else {
