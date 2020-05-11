@@ -41,12 +41,6 @@ func TestLastBlock(t *testing.T) {
 	assert.Equal(t, lastBlock.Transactions[0].Signature, "test3")
 }
 
-func TestRemoveFromTransactions(t *testing.T) {
-	filtered := RemoveFromTransactions([]Transaction{{Signature: "test2"}, {Signature: "test1"}, {Signature: "test3"}}, 0)
-
-	assert.NotContains(t, filtered, Transaction{Signature: "test2"})
-}
-
 func TestRemoveConfirmedTransactions(t *testing.T) {
 	filtered := RemoveConfirmedTransactions([]Transaction{{Signature: "test2"}, {Signature: "test1"}, {Signature: "test3"}}, []Transaction{{Signature: "test2"}})
 	assert.NotContains(t, filtered, Transaction{Signature: "test2"})

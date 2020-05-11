@@ -5,7 +5,7 @@ func IsTransactionAlreadyInMemPoolOrChain(t Transaction, memPool []Transaction, 
 	return IsTransactionInMemPool(t, memPool) || IsTransactionInChain(t, chain)
 }
 
-// IsTransactionAlreadyInMemPoolOrChain checks whether the transaction already exists in a given MemPool.
+// IsTransactionInMemPool checks whether the transaction already exists in a given MemPool.
 func IsTransactionInMemPool(t Transaction, memPool []Transaction) bool {
 	for i := len(memPool) - 1; i >= 0; i-- {
 		memPoolTransaction := memPool[i]
@@ -37,7 +37,7 @@ func IsTransactionInChain(t Transaction, chain []Block) bool {
 	return false
 }
 
-// Checks if a transaction is in a list of confirmed transactions.
+// isTransactionConfirmed checks if a transaction is in a list of confirmed transactions.
 func isTransactionConfirmed(transaction Transaction, confirmedTransactions []Transaction) bool {
 	for _, confirmedTransaction := range confirmedTransactions {
 		if transaction == confirmedTransaction {
@@ -48,12 +48,7 @@ func isTransactionConfirmed(transaction Transaction, confirmedTransactions []Tra
 	return false
 }
 
-// Removes a transaction from a slice at x index.
-func RemoveFromTransactions(slice []Transaction, s int) []Transaction {
-	return append(slice[:s], slice[s+1:]...)
-}
-
-// Takes a list of transactions and a list of transactions that have been confirmed, and removes the ones that have been confirmed.
+// RemoveConfirmedTransactions takes a list of transactions and a list of transactions that have been confirmed, and removes the ones that have been confirmed.
 func RemoveConfirmedTransactions(memPool []Transaction, confirmedTransactions []Transaction) []Transaction {
 	filteredMemPool := make([]Transaction, 0)
 
@@ -66,12 +61,12 @@ func RemoveConfirmedTransactions(memPool []Transaction, confirmedTransactions []
 	return filteredMemPool
 }
 
-// Gets the most recent link in a chain of blocks.
+// LastBlock gets the most recent link in a chain of blocks.
 func LastBlock(chain []Block) Block {
 	return chain[len(chain)-1]
 }
 
-// Calculates the mean of a slice.
+// calcMean calculates the mean of a slice.
 func calcMean(input []float64) float64 {
 	total := 0.0
 

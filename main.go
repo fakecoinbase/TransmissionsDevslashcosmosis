@@ -70,16 +70,18 @@ func main() {
 	self = core.LocalNode{Chain: []core.Block{core.GenesisBlock}, MemPool: make([]core.Transaction, 0), UTXO: make(core.UTXO), ValidationServerURL: validationServerURL, OperatorPublicKey: operatorPublicKey, MinimumChainsForConsensus: minimumChainsForConsensus}
 
 	scheduler.Every(1).Minutes().NotImmediately().Run(func() {
-		// Clear out stale transactions
-		for index, transaction := range self.MemPool {
-			// If the transaction is older than 24 hours
-			if time.Now().Sub(time.Unix(transaction.Timestamp, 0)).Hours() >= 24 {
+		// Save all young transactions and filter out stale transactions.
+		i := 0
+		for _, transaction := range self.MemPool {
+			// If transaction is younger than 24 hours
+			if time.Now().Sub(time.Unix(transaction.Timestamp, 0)).Hours() <= 24 {
+				self.MemPool[i] = transaction
+				i++
+			} else {
 				log.Warnf("Removing a stale transaction from the MemPool.... (%+v)", transaction)
-
-				// Update the MemPool with the removed transaction gone
-				self.MemPool = core.RemoveFromTransactions(self.MemPool, index)
 			}
 		}
+		self.MemPool = self.MemPool[:i]
 
 		// Start mining if we have enough transactions
 		if len(self.MemPool) > 0 && self.IsMining == false {
