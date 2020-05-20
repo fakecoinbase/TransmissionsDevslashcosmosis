@@ -32,7 +32,6 @@ jobs:
     - name: Test
       run: go test -coverprofile=profile.cov -covermode=count ./core
     
-    - uses: actions/checkout@v2
     - uses: shogo82148/actions-goveralls@v1
       with:
         path-to-profile: profile.cov
