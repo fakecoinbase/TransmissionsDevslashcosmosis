@@ -35,3 +35,4 @@ jobs:
     - uses: shogo82148/actions-goveralls@v1
       with:
         path-to-profile: profile.cov
+        ignore: 'core/p2p.go'
