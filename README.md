@@ -1,4 +1,4 @@
-# Cosmosis 🌌: A cryptocurrency written in Go ![Tests](https://github.com/TransmissionsDev/cosmosis/workflows/Tests/badge.svg)
+# Cosmosis 🌌: A cryptocurrency written in Go ![Tests](https://github.com/TransmissionsDev/cosmosis/workflows/Tests/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/TransmissionsDev/cosmosis/badge.svg?branch=master)](https://coveralls.io/github/TransmissionsDev/cosmosis?branch=master)
 
 <p align="center">
 <a href="https://roamresearch.com/#/app/t11s/page/BIYVRS82v"><strong>Read the Whitepaper 📄</strong></a>
