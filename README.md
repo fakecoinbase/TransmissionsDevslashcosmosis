@@ -27,6 +27,13 @@
 
 See [this repo](https://github.com/transmissionsdev/cosmosisUtils) for useful tools for hosting a node or interacting with the Cosmosis network.
 
+## 🎞 Demo
+
+https://youtu.be/x9O5g1MV82o
+
 ## 🤝 Contributing
 
 I am always looking for contributors of **all skill levels**! If you're looking to ease your way into the project, try out a [good first issue](https://github.com/transmissionsdev/cosmosis/labels/🌱%20good%20first%20issue).
+
+
+
