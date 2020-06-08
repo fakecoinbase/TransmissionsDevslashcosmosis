@@ -29,7 +29,7 @@ See [this repo](https://github.com/transmissionsdev/cosmosisUtils) for useful to
 
 ## 🎞 Demo
 
-https://youtu.be/x9O5g1MV82o
+https://youtu.be/vCs-41Ro6Do
 
 ## 🤝 Contributing
 
