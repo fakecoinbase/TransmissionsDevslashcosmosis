@@ -9,7 +9,10 @@ import (
 var coinbaseReward uint64 = 1000
 
 // The first block in our Blockchain
-var GenesisBlock = Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 100000000000000, Timestamp: 1585852961, Signature: ""}}, PreviousHash: ""}, Proof: Proof{Nonce: 0, DifficultyThreshold: 0}}
+var GenesisBlock = Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0400cd9b9f79736ea75ab291f302d8d001add0bb8d1a59dc1655804d1ca607e413c92c529f9ddb1568ac583b8b5affc71bbf00844a10a72eb1090f0fa8e3466082", Amount: 100000000000000, Timestamp: 1585852961, Signature: ""}}, PreviousHash: ""}, Proof: Proof{Nonce: 0, DifficultyThreshold: 0}}
+
+// We use this genesis block for our tests
+var testGenesisBlock = Block{BlockHeader: BlockHeader{Timestamp: 1585852979, Transactions: []Transaction{Transaction{Sender: "0", Recipient: "0458adabe2c014de6c3fd2f2c865c2ca7fe823a4131a4d22f98dcc77f1bffc8aeacf8a0b7949321c33214e9c1b2201063404a321110be8223ad1685ee32c9c02d0", Amount: 100000000000000, Timestamp: 1585852961, Signature: ""}}, PreviousHash: ""}, Proof: Proof{Nonce: 0, DifficultyThreshold: 0}}
 
 // The amount of unspent coin each user has associated with their public key
 type UTXO map[string]uint64
