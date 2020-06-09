@@ -211,13 +211,20 @@ func ValidateChain(blocks []Block, validationServerURL string) (bool, UTXO) {
 //  - Check that signatures are valid
 //  - Check that difficulty threshold is valid
 //  - Check that there are not duplicate transactions in the block that appear earlier in the chain
-func ValidateBlock(blockIndex int, blocks []Block, utxo UTXO, validationServerURL string) (bool, UTXO) {
+func ValidateBlock(blockIndex int, blocks []Block, utxo UTXO, validationServerURL string, shouldUseAltGenesisBlock ...bool) (bool, UTXO) {
 	block := blocks[blockIndex]
 
 	// If the block is the genesis block:
 	if blockIndex == 0 {
+		// We do this for tests, as tests use a separate genesis block
+		// because we hardcoded signatures which will break if we use the new genesis block.
+		genesisBlock := GenesisBlock
+		if len(shouldUseAltGenesisBlock) == 0 {
+			genesisBlock = testGenesisBlock
+		}
+
 		// Check this is the correct genesis block
-		if reflect.DeepEqual(block, GenesisBlock) {
+		if reflect.DeepEqual(block, genesisBlock) {
 			genesisTransaction := block.Transactions[0]
 
 			utxo[genesisTransaction.Recipient] += genesisTransaction.Amount
